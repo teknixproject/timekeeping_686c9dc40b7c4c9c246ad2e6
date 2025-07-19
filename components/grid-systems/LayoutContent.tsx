@@ -48,17 +48,6 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
     [footerLayout, deviceType]
   );
 
-  const containerStyle = useMemo(() => {
-    if (sidebarPosition === 'left' || sidebarPosition === 'right') {
-      return {
-        display: 'flex',
-      };
-    }
-    return {
-      display: 'flex',
-    };
-  }, [sidebarPosition]);
-
   useEffect(() => {
     if (!headerRef.current) return;
 
@@ -100,9 +89,9 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
           </div>
         )
       }
-      <div className="z-10" style={containerStyle as any}>
+      <div className="z-10 flex">
         {!_.isEmpty(selectedSidebarLayout) && (
-          <div id="sidebar" style={sidebarStyle} className="sticky top-0 z-10 max-h-screen overflow-hidden">
+          <div id="sidebar" style={{ ...sidebarStyle }} className="sticky top-0 z-10 max-h-screen overflow-hidden">
             <GridSystemContainer
               page={selectedSidebarLayout}
               deviceType={deviceType}
