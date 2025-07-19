@@ -34,7 +34,7 @@ export function useConstructorDataAPI(uid?: string) {
 
   const newHeaderLayout = _.get(data, 'data.headerLayout.layoutJson', null);
   const newHeaderId = _.get(data, 'data.headerLayout._id', '');
-  const newSidebarLayout = _.get(data, 'data.headerLayout.layoutJson', null);
+  const newSidebarLayout = _.get(data, 'data.sidebarLayout.layoutJson', null);
   const newSidebarId = _.get(data, 'data.headerLayout._id', '');
   const newFooterLayout = _.get(data, 'data.footerLayout.layoutJson', null);
   const newFooterId = _.get(data, 'data.footerLayout._id', '');
