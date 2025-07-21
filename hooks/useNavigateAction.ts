@@ -3,16 +3,12 @@ import { useRouter } from 'next/navigation';
 import { TAction, TActionNavigate } from '@/types';
 import { buildPathFromPattern } from '@/uitls/pathname';
 
-import { actionHookSliceStore } from './actionSliceStore';
 import { useHandleData } from './useHandleData';
 
 export type TUseActions = {
   handleNavigateAction: (action: TAction<TActionNavigate>) => Promise<void>;
 };
 
-type TProps = {
-  executeActionFCType: (action?: TAction) => Promise<void>;
-};
 export const normalizeUrl = (url: string): string => {
   if (!url) return '';
 
@@ -42,9 +38,8 @@ export const normalizeUrl = (url: string): string => {
   }
 };
 
-export const useNavigateAction = ({ executeActionFCType }: TProps): TUseActions => {
+export const useNavigateAction = (): TUseActions => {
   const router = useRouter();
-  const findAction = actionHookSliceStore((state) => state.findAction);
   const { getData } = useHandleData({});
 
   const isValidUrl = (url: string): boolean => {
@@ -78,10 +73,6 @@ export const useNavigateAction = ({ executeActionFCType }: TProps): TUseActions 
         window.location.href = urlConverted;
       } else {
         router.push(urlConverted);
-      }
-
-      if (action?.next) {
-        await executeActionFCType(findAction(action.next));
       }
     } catch (error) {
       console.error('❌ Error in handleNavigateAction:', error);

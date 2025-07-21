@@ -3,21 +3,15 @@ import _ from 'lodash';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
-  TAction,
-  TActionApiCall,
-  TActionCustomFunction,
-  TActionLoop,
-  TActionNavigate,
-  TActionUpdateState,
-  TConditional,
-  TTriggerActions,
-  TTriggerValue,
+    TAction, TActionApiCall, TActionCustomFunction, TActionLoop, TActionNavigate,
+    TActionUpdateState, TConditional, TConditionChildMap, TTriggerActions, TTriggerValue
 } from '@/types';
 import { GridItem } from '@/types/gridItem';
+import { transformVariable } from '@/uitls/tranformVariable';
 
 import { actionHookSliceStore } from './actionSliceStore';
 import { useApiCallAction } from './useApiCallAction';
-import { useConditionAction } from './useConditionAction';
+import { useConditionChildAction } from './useConditionChildAction';
 import { useCustomFunction } from './useCustomFunction';
 import { useLoopActions } from './useLoopActions';
 import { useNavigateAction } from './useNavigateAction';
@@ -30,13 +24,34 @@ export type TUseActions = {
     formData?: Record<string, any>
   ) => Promise<void>;
   isLoading: boolean;
+  executeActionFCType: (action?: TAction) => Promise<void>;
 };
 
 export const useActions = (data?: GridItem): TUseActions => {
   const actions = useMemo(() => _.get(data, 'actions') as TTriggerActions, [data]);
   const setMultipleActions = actionHookSliceStore((state) => state.setMultipleActions);
+  const findAction = actionHookSliceStore((state) => state.findAction);
+  const { handleApiCallAction } = useApiCallAction();
+  // const { executeConditional } = useConditionAction();
+  const { executeConditionalChild } = useConditionChildAction();
+  const { handleUpdateStateAction } = useUpdateStateAction();
+  const { handleNavigateAction } = useNavigateAction();
+  const { executeLoopOverList } = useLoopActions();
+  const { handleCustomFunction } = useCustomFunction();
   const [isLoading, setIsLoading] = useState(false);
 
+  const executeConditional = (action: TAction<TConditional>) => {
+    const conditions = action?.data?.conditions as string[];
+    if (_.isEmpty(conditions)) return;
+    for (const conditionId of conditions) {
+      const condition = findAction(conditionId) as TAction<TConditionChildMap>;
+      console.log('🚀 ~ executeConditional ~ condition:', condition);
+
+      if (condition) {
+        executeActionFCType(condition);
+      }
+    }
+  };
   const executeActionFCType = async (action?: TAction): Promise<void> => {
     if (!action?.fcType) return;
 
@@ -45,31 +60,34 @@ export const useActions = (data?: GridItem): TUseActions => {
         await executeAction(action as TAction<TActionApiCall>);
         break;
       case 'conditional':
-        await executeConditional(action as TAction<TConditional>);
+        executeConditional(action as TAction<TConditional>);
+        break;
+      case 'conditionalChild':
+        const isMatch = await executeConditionalChild(action as TAction<TConditionChildMap>);
+        console.log('🚀 ~ executeActionFCType ~ isMatch:', { action, isMatch });
+        const conditionChildData = action?.data as TConditionChildMap;
+        const isReturnValue = (action?.data as TConditionChildMap)?.isReturnValue;
+        if (isReturnValue && isMatch) {
+          return transformVariable(conditionChildData.valueReturn!);
+        }
+        if (!isMatch) return;
         break;
       case 'loop':
         await executeLoopOverList(action as TAction<TActionLoop>);
         break;
 
       default:
-        console.warn(`Unknown fcType: ${action.fcType}`);
+        console.error(`Unknown fcType: ${action.fcType}`);
+    }
+    if (action.next) {
+      await executeActionFCType(findAction(action.next));
     }
   };
-
-  const { handleApiCallAction } = useApiCallAction({ executeActionFCType });
-  const { executeConditional } = useConditionAction({ executeActionFCType });
-  const { handleUpdateStateAction } = useUpdateStateAction({
-    executeActionFCType,
-  });
-  const { handleNavigateAction } = useNavigateAction({ executeActionFCType });
-  const { executeLoopOverList } = useLoopActions({ executeActionFCType });
-  const { handleCustomFunction } = useCustomFunction({ executeActionFCType });
 
   const mounted = useRef(false);
 
   useEffect(() => {
     mounted.current = true;
-
     return () => {
       mounted.current = false;
     };
@@ -83,13 +101,13 @@ export const useActions = (data?: GridItem): TUseActions => {
         case 'navigate':
           return handleNavigateAction(action as TAction<TActionNavigate>);
         case 'apiCall':
-          return handleApiCallAction(action as TAction<TActionApiCall>);
+          return await handleApiCallAction(action as TAction<TActionApiCall>);
         case 'updateStateManagement':
-          return handleUpdateStateAction(action as TAction<TActionUpdateState>);
+          return await handleUpdateStateAction(action as TAction<TActionUpdateState>);
         case 'customFunction':
-          return handleCustomFunction(action as TAction<TActionCustomFunction>);
+          return await handleCustomFunction(action as TAction<TActionCustomFunction>);
         default:
-          console.warn(`Unknown action type: ${action.type}`);
+          console.error(`Unknown action type: ${action.type}`);
       }
     } catch (error) {
       console.error(`Error executing action ${action.id}:`, error);
@@ -101,8 +119,8 @@ export const useActions = (data?: GridItem): TUseActions => {
     triggerType: TTriggerValue,
     formData?: Record<string, any>
   ): Promise<void> => {
-    console.log('🚀 ~ useActions ~ formData:', formData);
     const actionsToExecute = triggerActions[triggerType];
+    console.log('🚀 ~ useActions ~ actionsToExecute:', actionsToExecute);
 
     await setMultipleActions({
       actions: triggerActions,
@@ -139,9 +157,10 @@ export const useActions = (data?: GridItem): TUseActions => {
 
   useEffect(() => {
     if (mounted.current && !_.isEmpty(actions) && 'onPageLoad' in actions) {
+      console.log('🚀 ~ useEffect ~ actions:', actions);
       handleAction('onPageLoad');
     }
   }, [mounted.current]);
 
-  return { handleAction, isLoading };
+  return { handleAction, isLoading, executeActionFCType };
 };

@@ -1,19 +1,10 @@
 import { stateManagementStore } from '@/stores';
 import {
-  TAction,
-  TActionLoop,
-  TActionLoopOverList,
-  TConditionChildMap,
-  TTypeSelectState,
+    TAction, TActionLoop, TActionLoopOverList, TConditionChildMap, TTypeSelectState
 } from '@/types';
 
 import { actionHookSliceStore } from './actionSliceStore';
-import { useConditionAction } from './useConditionAction';
 import { useHandleData } from './useHandleData';
-
-type TProps = {
-  executeActionFCType: (action?: TAction) => Promise<void>;
-};
 
 // Hằng số cấu hình
 const DEFAULT_TIMEOUT_MS = 5000;
@@ -96,11 +87,11 @@ const handleListLoop = async (
 };
 
 // Main hook
-export const useLoopActions = ({ executeActionFCType }: TProps) => {
+export const useLoopActions = () => {
   const { getData } = useHandleData({});
   const findVariable = stateManagementStore((state) => state.findVariable);
   const findAction = actionHookSliceStore((state) => state.findAction);
-  const { handleCompareCondition } = useConditionAction({ executeActionFCType });
+  // const { handleCompareCondition } = useConditionAction();
 
   const executeLoopOverList = async (action: TAction<TActionLoop>) => {
     const option = action.data?.option;
@@ -109,7 +100,7 @@ export const useLoopActions = ({ executeActionFCType }: TProps) => {
       const loopCondition = findAction(action.data?.while?.condition || '');
       if (!loopCondition) return;
 
-      await handleWhileLoop(loopCondition as TAction<TConditionChildMap>, handleCompareCondition);
+      // await handleWhileLoop(loopCondition as TAction<TConditionChildMap>, handleCompareCondition);
     } else if (option === 'overList') {
       const overListId = action.data?.overList?.condition;
       const overList = findAction(overListId || '') as TAction<TActionLoopOverList>;

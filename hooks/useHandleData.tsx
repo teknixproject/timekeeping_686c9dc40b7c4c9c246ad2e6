@@ -53,6 +53,7 @@ const getVariableIdsFormData = (dataProps: TUseHandleData['dataProp']) => {
 
 export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
   const params = useParams();
+  const [customFunctionResult, setCustomFunctionResult] = useState(null);
   const apiResponseState = stateManagementStore((state) => state.apiResponse);
   const findCustomFunction = customFunctionStore((state) => state.findCustomFunction);
   const appState = stateManagementStore((state) => state.appState);
@@ -101,6 +102,7 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
               json: value?.value,
               path: getData(item.jsonPath as TData) || '',
             });
+            console.log('🚀 ~ useHandleData ~ valueJsonPath:', valueJsonPath);
             return valueJsonPath?.[0];
           case 'statusCode':
             return value?.statusCode;
@@ -150,13 +152,15 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
           const optionItem = option as NonNullable<TDataField['options']>[number];
 
           switch (optionItem.option) {
+            case 'noAction':
+              break;
             case 'jsonPath':
               const jsonPathValue = getData(optionItem.jsonPath as TData);
               const valueJsonPath = JSONPath({
                 json: value,
                 path: jsonPathValue || '',
               });
-              value = valueJsonPath[0];
+              value = valueJsonPath?.[0];
               break;
 
             case 'itemAtIndex':
@@ -334,13 +338,7 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
   const handleCondition = (data: TData) => {
     if (!data?.condition) return;
     const value = executeConditionalInData(data?.condition, getData);
-    console.log('🚀 ~ handleCondition ~ value:', value);
-    // return executeConditional(conditionChildMap, findAction, getData);
     return value;
-    // if (_.isEmpty(conditionChildMap)) return;
-    // const rootCondition = findRootConditionChild(conditionChildMap);
-
-    // return handleCompareCondition(rootCondition?.id || '', conditionChildMap, getData);
   };
   //#region getData
   const getData = useCallback(
@@ -348,8 +346,6 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
       if (_.isEmpty(data) && valueStream) return valueStream;
       if (_.isEmpty(data) && props.valueStream) return props.valueStream;
       if (_.isEmpty(data) || !data.type) return data?.defaultValue;
-      // dataPropRef.current = data;
-      // valueStreamRef.current = valueStream;
 
       switch (data.type) {
         case 'valueInput':
@@ -359,7 +355,7 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
         case 'dynamicGenerate':
           return handleDynamicGenerate(data);
         case 'apiResponse':
-          return handleApiResponse(data);
+          return handleState(data);
         case 'appState':
           return handleState(data);
         case 'componentState':
@@ -376,7 +372,6 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
             findCustomFunction,
             getData,
           });
-
         case 'condition':
           return handleCondition(data);
         default:
