@@ -74,6 +74,8 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
     overflow: 'hidden', // Remove auto overflow để content có thể scroll cùng page
   }), [headerHeight]);
 
+  const isSidebarLeft = sidebarPosition === 'left'
+  const isSidebarRight = sidebarPosition === 'right'
 
   return (
     <div className="relative !z-0">
@@ -90,7 +92,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
         )
       }
       <div className="z-10 flex">
-        {!_.isEmpty(selectedSidebarLayout) && (
+        {isSidebarLeft && !_.isEmpty(selectedSidebarLayout) && (
           <div id="sidebar" style={{ ...sidebarStyle }} className="sticky top-0 z-10 max-h-screen overflow-hidden">
             <GridSystemContainer
               page={selectedSidebarLayout}
@@ -101,6 +103,16 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
 
         )}
         <main style={{ flex: 1, overflow: 'hidden' }}>{children}</main>
+        {isSidebarRight && !_.isEmpty(selectedSidebarLayout) && (
+          <div id="sidebar" style={{ ...sidebarStyle }} className="sticky top-0 z-10 max-h-screen overflow-hidden">
+            <GridSystemContainer
+              page={selectedSidebarLayout}
+              deviceType={deviceType}
+              isHeader
+            />
+          </div>
+
+        )}
       </div>
       {
         !_.isEmpty(selectedFooterLayout) && (
