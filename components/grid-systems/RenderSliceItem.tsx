@@ -5,6 +5,7 @@ import _ from 'lodash';
 import { FC, useMemo } from 'react';
 import { Controller, FormProvider, useForm, useFormContext } from 'react-hook-form';
 
+import { actionHookSliceStore } from '@/hooks/actionSliceStore';
 import { useActions } from '@/hooks/useActions';
 import { useHandleData } from '@/hooks/useHandleData';
 import { useHandleProps } from '@/hooks/useHandleProps';
@@ -16,7 +17,6 @@ import { convertDataToProps } from '@/uitls/transfromProp';
 import { css } from '@emotion/react';
 
 import { componentRegistry, convertProps } from './ListComponent';
-import LoadingPage from './loadingPage';
 
 type TProps = {
   data: GridItem;
@@ -28,7 +28,6 @@ const getPropData = (data: GridItem) =>
 
 const getPropActions = (data: GridItem) =>
   data?.componentProps?.dataProps?.filter((item: any) => item.type.includes('MouseEventHandler'));
-
 const handleCssWithEmotion = (staticProps: Record<string, any>) => {
   const advancedCss = convertToEmotionStyle(staticProps?.styleMultiple);
   let cssMultiple;
@@ -51,7 +50,6 @@ const handleCssWithEmotion = (staticProps: Record<string, any>) => {
 };
 // Custom hook to extract common logic
 const useRenderItem = (data: GridItem, valueStream?: any) => {
-  // console.log('🚀 ~ useRenderItem ~ valueStream:', valueStream);
   const { isForm, isNoChildren, isChart, isDatePicker } = getComponentType(data?.value || '');
   const { findVariable } = stateManagementStore();
   const { dataState } = useHandleData({
@@ -59,10 +57,9 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
     valueStream,
   });
 
-  // console.log(`🚀 ~ useRenderItem ~ dataState:${data.id}`, dataState);
   const { actions } = useHandleProps({ dataProps: getPropActions(data) });
 
-  const { handleAction, isLoading } = useActions(data);
+  const { isLoading } = useActions(data);
 
   const valueType = useMemo(() => data?.value?.toLowerCase() || '', [data?.value]);
 
@@ -82,14 +79,13 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
       valueType === 'menu'
         ? { ...staticProps, ...actions }
         : {
-          ...staticProps,
-          ...dataState,
-          ...actions,
-        };
+            ...staticProps,
+            ...dataState,
+            ...actions,
+          };
     console.log('isDatePicker', isDatePicker);
 
     if (isDatePicker) {
-
       if (typeof result.value === 'string') result.value = dayjs(result.value);
       if (typeof result.defaultValue === 'string') result.defaultValue = dayjs(result.defaultValue);
     }
@@ -101,7 +97,7 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
 
     return result;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, dataState, valueStream, handleAction]);
+  }, [data, dataState, valueStream]);
 
   return {
     isLoading,
@@ -119,22 +115,20 @@ const ComponentRenderer: FC<{
   propsCpn: any;
   data: GridItem;
   children?: React.ReactNode;
-}> = ({ Component, propsCpn, data, children }) => (
-  <Component key={data?.id} {...propsCpn}>
-    {!_.isEmpty(data?.childs) ? children : propsCpn.children}
-  </Component>
-);
+}> = ({ Component, propsCpn, data, children }) => {
+  return (
+    <Component key={data?.id} {...propsCpn}>
+      {!_.isEmpty(data?.childs) ? children : propsCpn.children}
+    </Component>
+  );
+};
 
 const RenderSliceItem: FC<TProps> = (props) => {
   const { data, valueStream } = props;
   const { isLoading, valueType, Component, propsCpn, dataState } = useRenderItem(data, valueStream);
-  // console.log(`🚀 ~ propsCpn: ${data.id}`, {
-  //   propsCpn,
-  //   data,
-  // });
   const { isForm, isNoChildren, isChart, isFeebBack } = getComponentType(data?.value || '');
   if (!valueType) return <div></div>;
-  if (isLoading) return <LoadingPage />;
+  if (isLoading) return;
   if (isForm) return <RenderForm {...props} />;
 
   if (isNoChildren || isChart) return <Component key={data?.id} {...propsCpn} />;
@@ -161,13 +155,16 @@ const RenderForm: FC<TProps> = (props) => {
   });
   const { handleSubmit } = methods;
   const { handleAction } = useActions();
+  const setFormData = actionHookSliceStore((state) => state.setFormData);
   const formKeys = useMemo(() => data?.componentProps?.formKeys, [data?.componentProps?.formKeys]);
 
   const onSubmit = (formData: any) => {
-    handleAction('onSubmit', data?.actions, formData);
+    setFormData(formData);
+    propsCpn?.onFinish();
   };
+
   if (!valueType) return <div></div>;
-  if (isLoading) return <LoadingPage />;
+  if (isLoading) return <></>;
 
   return (
     <FormProvider {...methods}>
@@ -195,8 +192,6 @@ const RenderForm: FC<TProps> = (props) => {
 const RenderFormItem: FC<TProps> = (props) => {
   const { data, formKeys, valueStream } = props;
   const { isLoading, valueType, Component, propsCpn, dataState } = useRenderItem(data, valueStream);
-  const { findVariable } = stateManagementStore();
-  // const { getData, dataState } = useHandleData({ dataProp: data?.data });
   const { control } = useFormContext();
   const { isInput } = getComponentType(data?.value || '');
 
@@ -216,13 +211,13 @@ const RenderFormItem: FC<TProps> = (props) => {
     }
     return <Component {...propsCpn} />;
   }
-
+  if (!valueType) return <div></div>;
+  if (isLoading) return;
   return (
     <ComponentRenderer Component={Component} propsCpn={propsCpn} data={data}>
       {data?.childs?.map((child) => (
         <RenderFormItem {...props} data={child} key={`form-child-${child.id}`} />
       ))}
-      <p className="grow"></p>
     </ComponentRenderer>
   );
 };

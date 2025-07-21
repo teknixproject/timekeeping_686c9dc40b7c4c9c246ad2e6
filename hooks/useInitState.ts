@@ -222,7 +222,6 @@ export const useInitStateRender = () => {
   const resetAuthSettings = authSettingStore((state) => state.reset);
 
   const router = useRouter();
-
   const setCustomFunctions = customFunctionStore((state) => state.setCustomFunctions);
   const { enable, pages, entryPage } = authSettingStore();
   const { bodyLayout, isLoading } = useConstructorDataAPI(uid || '');
@@ -347,7 +346,6 @@ export const useInitStateRender = () => {
     fetchData();
     setLoading(false);
   }, [uid, projectId]);
-
   return {
     isLoading: isLoading || loading,
     selectedBodyLayout,
