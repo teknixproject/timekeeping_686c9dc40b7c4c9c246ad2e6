@@ -65,6 +65,8 @@ const useLayoutProcessing = (dataPreviewUI: any, deviceType: string) => {
 
     return {
       selectedHeaderLayout: getLayoutForDevice(dataPreviewUI?.headerLayout),
+      selectedSidebarLayout: getLayoutForDevice(dataPreviewUI?.sidebarLayout),
+      sidebarPosition: dataPreviewUI?.sidebarPosition,
       selectedBodyLayout: getLayoutForDevice(dataPreviewUI?.bodyLayout),
       selectedFooterLayout: getLayoutForDevice(dataPreviewUI?.footerLayout),
     };
@@ -94,11 +96,13 @@ export const useInitStatePreview = () => {
   const state = useMemo(() => _.get(dataPreviewUI, 'state'), [dataPreviewUI]);
 
   // Layout processing
-  const { selectedHeaderLayout, selectedBodyLayout, selectedFooterLayout } = useLayoutProcessing(
-    dataPreviewUI,
-    deviceType
-  );
-
+  const {
+    selectedHeaderLayout,
+    selectedSidebarLayout,
+    sidebarPosition,
+    selectedBodyLayout,
+    selectedFooterLayout,
+  } = useLayoutProcessing(dataPreviewUI, deviceType);
   // Optimized API calls with error handling
   const apiCalls = useMemo(() => {
     const effectiveProjectId = projectId || process.env.NEXT_PUBLIC_PROJECT_ID || '';
@@ -190,6 +194,8 @@ export const useInitStatePreview = () => {
 
     // Layout data
     selectedHeaderLayout,
+    selectedSidebarLayout,
+    sidebarPosition,
     selectedBodyLayout,
     selectedFooterLayout,
 

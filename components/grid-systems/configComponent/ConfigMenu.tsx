@@ -185,8 +185,6 @@ const ConfigMenu: React.FC<NavigationMenuProps> = ({
 
     // Processed items
     const processedItems = useMemo(() => processMenuItems(items), [items, processMenuItems]);
-    console.log('🚀 ~ processedItems:', processedItems);
-
     // Selected keys dựa trên pathname
     const selectedKeys = useMemo(() => {
         const pathBasedKeys = getSelectedKeysFromPathname(items, pathname);

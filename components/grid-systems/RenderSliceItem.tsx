@@ -79,11 +79,10 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
       valueType === 'menu'
         ? { ...staticProps, ...actions }
         : {
-            ...staticProps,
-            ...dataState,
-            ...actions,
-          };
-    console.log('isDatePicker', isDatePicker);
+          ...staticProps,
+          ...dataState,
+          ...actions,
+        };
 
     if (isDatePicker) {
       if (typeof result.value === 'string') result.value = dayjs(result.value);
