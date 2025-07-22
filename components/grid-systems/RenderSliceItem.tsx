@@ -126,13 +126,19 @@ const ComponentRenderer: FC<{
 const RenderSliceItem: FC<TProps> = (props) => {
   const { data, valueStream } = props;
   const { isLoading, valueType, Component, propsCpn, dataState } = useRenderItem(data, valueStream);
-  const { isForm, isNoChildren, isChart, isFeebBack } = getComponentType(data?.value || '');
+  console.log(`🚀 ~ propsCpn:${data.id}`, propsCpn);
+  const { isForm, isNoChildren, isChart, isMap } = getComponentType(data?.value || '');
   if (!valueType) return <div></div>;
   if (isLoading) return;
   if (isForm) return <RenderForm {...props} />;
 
   if (isNoChildren || isChart) return <Component key={data?.id} {...propsCpn} />;
-
+  if (isMap)
+    return (
+      <div style={{ width: propsCpn.width || '100%', height: propsCpn.height || '400px' }}>
+        <Component key={data?.id} {...propsCpn} />
+      </div>
+    );
   return (
     <ComponentRenderer Component={Component} propsCpn={propsCpn} data={data}>
       {data?.childs?.map((child, index) => (
