@@ -18,6 +18,7 @@ export function useConstructorDataAPI(uid?: string) {
   const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
   const {
     headerLayout,
+    sidebarLayout,
     footerLayout,
     sidebarPosition,
     setHeaderLayout,
@@ -35,7 +36,7 @@ export function useConstructorDataAPI(uid?: string) {
   const newHeaderLayout = _.get(data, 'data.headerLayout.layoutJson', null);
   const newHeaderId = _.get(data, 'data.headerLayout._id', '');
   const newSidebarLayout = _.get(data, 'data.sidebarLayout.layoutJson', null);
-  const newSidebarId = _.get(data, 'data.headerLayout._id', '');
+  const newSidebarId = _.get(data, 'data.sidebarLayout._id', '');
   const newFooterLayout = _.get(data, 'data.footerLayout.layoutJson', null);
   const newFooterId = _.get(data, 'data.footerLayout._id', '');
   const newSidebarPosition = _.get(data, 'data.sidebarPosition', '');
@@ -45,7 +46,7 @@ export function useConstructorDataAPI(uid?: string) {
       if (newHeaderId && newHeaderId !== (headerLayout?._id || '')) {
         setHeaderLayout({ _id: newHeaderId, layoutJson: newHeaderLayout });
       }
-      if (newHeaderId && newHeaderId !== (headerLayout?._id || '')) {
+      if (newSidebarId && newSidebarId !== (sidebarLayout?._id || '')) {
         setSidebarLayout({ _id: newSidebarId, layoutJson: newSidebarLayout });
       }
       if (newFooterId && newFooterId !== (footerLayout?._id || '')) {
