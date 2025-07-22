@@ -79,10 +79,10 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
       valueType === 'menu'
         ? { ...staticProps, ...actions }
         : {
-            ...staticProps,
-            ...dataState,
-            ...actions,
-          };
+          ...staticProps,
+          ...dataState,
+          ...actions,
+        };
 
     if (isDatePicker) {
       if (typeof result.value === 'string') result.value = dayjs(result.value);
@@ -115,8 +115,11 @@ const ComponentRenderer: FC<{
   data: GridItem;
   children?: React.ReactNode;
 }> = ({ Component, propsCpn, data, children }) => {
+  // console.log('ComponentRenderer', propsCpn?.style);
+  const { style, ...newPropsCpn } = propsCpn
+
   return (
-    <Component key={data?.id} {...propsCpn}>
+    <Component key={data?.id} {...newPropsCpn}>
       {!_.isEmpty(data?.childs) ? children : propsCpn.children}
     </Component>
   );
@@ -125,7 +128,7 @@ const ComponentRenderer: FC<{
 const RenderSliceItem: FC<TProps> = (props) => {
   const { data, valueStream } = props;
   const { isLoading, valueType, Component, propsCpn, dataState } = useRenderItem(data, valueStream);
-  console.log(`🚀 ~ propsCpn:${data.id}`, propsCpn);
+  // console.log(`🚀 ~ propsCpn:${data.id}`, propsCpn);
   const { isForm, isNoChildren, isChart, isMap } = getComponentType(data?.value || '');
   if (!valueType) return <div></div>;
   if (isLoading) return;
