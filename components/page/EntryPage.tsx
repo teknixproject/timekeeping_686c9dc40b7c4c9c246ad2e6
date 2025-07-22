@@ -84,10 +84,10 @@ export async function generateMetadata(): Promise<Metadata> {
       'max-image-preview': formMetadata?.robots?.maxImagePreview,
       googleBot: formMetadata?.robots?.googleBot
         ? {
-            index: formMetadata?.robots?.googleBot?.index,
-            follow: formMetadata?.robots?.googleBot?.follow,
-            noimageindex: formMetadata?.robots?.googleBot?.noimageindex,
-          }
+          index: formMetadata?.robots?.googleBot?.index,
+          follow: formMetadata?.robots?.googleBot?.follow,
+          noimageindex: formMetadata?.robots?.googleBot?.noimageindex,
+        }
         : undefined,
     },
     icons: {
@@ -113,7 +113,7 @@ export async function getOrigin() {
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const getPatterns = async (): Promise<string[]> => {
   try {
-    const res = await fetch(`${API_URL}/document/uids?projectId=${PROJECT_ID || ''}`);
+    const res = await fetch(`${API_URL}/documents/uids?projectId=${PROJECT_ID || ''}`);
     if (!res.ok) return [];
     const data = await res.json();
     if (!data) return [];

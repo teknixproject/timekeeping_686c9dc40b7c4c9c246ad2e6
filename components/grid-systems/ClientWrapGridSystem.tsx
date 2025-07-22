@@ -2,7 +2,7 @@
 
 import _ from 'lodash';
 import dynamic from 'next/dynamic';
-import { FC } from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useInitStatePreview, useInitStateRender } from '@/hooks/useInitState';
 
@@ -14,6 +14,7 @@ const GridSystemContainer = dynamic(() => import('@/components/grid-systems'), {
 const LoadingPage = dynamic(() => import('./loadingPage'), {
   ssr: false,
 });
+
 //#region RenderUIClient
 export const RenderUIClient: FC = () => {
   const { deviceType, isLoading, selectedBodyLayout } = useInitStateRender();
@@ -30,18 +31,56 @@ export const RenderUIClient: FC = () => {
     </div>
   );
 };
+
 //#region PreviewUI
 export const PreviewUI: FC = () => {
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  // ALWAYS call hooks first, before any conditional logic
   const {
     deviceType,
     isLoading,
     selectedBodyLayout,
     selectedFooterLayout,
     selectedHeaderLayout,
-    customWidgetName,
+    selectedSidebarLayout,
+    sidebarPosition,
+    // customWidgetName,
     isPage,
   } = useInitStatePreview();
 
+  // useEffect must also be called consistently
+  useEffect(() => {
+    if (!headerRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setHeaderHeight(entry.contentRect.height);
+      }
+    });
+
+    resizeObserver.observe(headerRef.current);
+
+    // Set initial height
+    setHeaderHeight(headerRef.current.offsetHeight);
+
+    return () => resizeObserver.disconnect();
+  }, [selectedHeaderLayout]);
+
+  const sidebarStyle = useMemo(() => ({
+    flexShrink: 0,
+    position: 'sticky' as const,
+    top: `${headerHeight}px`,
+    zIndex: 10,
+    maxHeight: `calc(100vh - ${headerHeight}px)`,
+    overflow: 'hidden',
+  }), [headerHeight]);
+
+  const isSidebarLeft = sidebarPosition === 'left';
+  const isSidebarRight = sidebarPosition === 'right';
+
+  // Conditional rendering AFTER all hooks have been called
   if (isLoading) {
     return <LoadingPage />;
   }
@@ -49,34 +88,58 @@ export const PreviewUI: FC = () => {
   if (!selectedBodyLayout && !isPage) {
     return <></>;
   }
+
   return (
-    <div className="component-preview-container">
-      {isPage && !customWidgetName ? (
-        <div className="relative flex flex-col min-h-screen">
-          {!_.isEmpty(selectedHeaderLayout) && (
+    <div className="relative !z-0">
+      {!_.isEmpty(selectedHeaderLayout) && (
+        <div id="header" ref={headerRef} className="sticky top-0 z-10 max-h-screen overflow-hidden">
+          <GridSystemContainer
+            page={selectedHeaderLayout}
+            deviceType={deviceType}
+            isFooter
+            style={{ width: '100%' }}
+          />
+        </div>
+      )}
+      <div className="z-10 flex">
+        {isSidebarLeft && !_.isEmpty(selectedSidebarLayout) && (
+          <div id="sidebar" style={{ ...sidebarStyle }} className="sticky top-0 z-10 max-h-screen overflow-hidden">
             <GridSystemContainer
-              page={selectedHeaderLayout || {}}
+              page={selectedSidebarLayout}
               deviceType={deviceType}
               isHeader
             />
-          )}
-
-          {!_.isEmpty(selectedBodyLayout) ? (
+          </div>
+        )}
+        <main style={{ flex: 1, overflow: 'hidden' }}>
+          {/* {!_.isEmpty(selectedBodyLayout) ? (
             <GridSystemContainer page={selectedBodyLayout || {}} deviceType={deviceType} isBody />
           ) : (
             <div className="h-[300px]" />
-          )}
-
-          {!_.isEmpty(selectedFooterLayout) && (
+          )} */}
+          <div className="relative">
+            {!_.isEmpty(selectedBodyLayout) && (
+              <GridSystemContainer page={selectedBodyLayout} deviceType={deviceType} isBody />
+            )}
+          </div>
+        </main>
+        {isSidebarRight && !_.isEmpty(selectedSidebarLayout) && (
+          <div id="sidebar" style={{ ...sidebarStyle }} className="sticky top-0 z-10 max-h-screen overflow-hidden">
             <GridSystemContainer
-              page={selectedFooterLayout || {}}
+              page={selectedSidebarLayout}
               deviceType={deviceType}
-              isFooter
+              isHeader
             />
-          )}
-        </div>
-      ) : (
-        <div />
+          </div>
+        )}
+      </div>
+      {!_.isEmpty(selectedFooterLayout) && (
+        <GridSystemContainer
+          page={selectedFooterLayout}
+          deviceType={deviceType}
+          isFooter
+          style={{ width: '100%' }}
+        />
       )}
     </div>
   );

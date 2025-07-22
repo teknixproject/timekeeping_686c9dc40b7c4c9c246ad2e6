@@ -100,7 +100,6 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
               isHeader
             />
           </div>
-
         )}
         <main style={{ flex: 1, overflow: 'hidden' }}>{children}</main>
         {isSidebarRight && !_.isEmpty(selectedSidebarLayout) && (
@@ -111,7 +110,6 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
               isHeader
             />
           </div>
-
         )}
       </div>
       {
