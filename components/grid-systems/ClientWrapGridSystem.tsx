@@ -89,8 +89,16 @@ export const PreviewUI: FC = () => {
     return <></>;
   }
 
+  console.log('selectedHeaderLayout', {
+    selectedHeaderLayout,
+    selectedSidebarLayout,
+    selectedBodyLayout,
+    selectedFooterLayout
+  });
+
+
   return (
-    <div className="relative !z-0">
+    <div className="relative !z-0 h-screen">
       {!_.isEmpty(selectedHeaderLayout) && (
         <div id="header" ref={headerRef} className="sticky top-0 z-10 max-h-screen overflow-hidden">
           <GridSystemContainer
@@ -117,7 +125,7 @@ export const PreviewUI: FC = () => {
           ) : (
             <div className="h-[300px]" />
           )} */}
-          <div className="relative">
+          <div className="relative h-screen">
             {!_.isEmpty(selectedBodyLayout) && (
               <GridSystemContainer page={selectedBodyLayout} deviceType={deviceType} isBody />
             )}
