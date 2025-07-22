@@ -13,7 +13,7 @@ import { stateManagementStore } from '@/stores';
 import { GridItem } from '@/types/gridItem';
 import { getComponentType } from '@/uitls/component';
 import { convertCssObjectToCamelCase, convertToEmotionStyle } from '@/uitls/styleInline';
-import { convertDataToProps } from '@/uitls/transfromProp';
+import { convertToPlainProps } from '@/uitls/transfromProp';
 import { css } from '@emotion/react';
 
 import { componentRegistry, convertProps } from './ListComponent';
@@ -52,7 +52,7 @@ const handleCssWithEmotion = (staticProps: Record<string, any>) => {
 const useRenderItem = (data: GridItem, valueStream?: any) => {
   const { isForm, isNoChildren, isChart, isDatePicker } = getComponentType(data?.value || '');
   const { findVariable } = stateManagementStore();
-  const { dataState } = useHandleData({
+  const { dataState, getData } = useHandleData({
     dataProp: getPropData(data),
     valueStream,
   });
@@ -79,10 +79,10 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
       valueType === 'menu'
         ? { ...staticProps, ...actions }
         : {
-          ...staticProps,
-          ...dataState,
-          ...actions,
-        };
+            ...staticProps,
+            ...dataState,
+            ...actions,
+          };
 
     if (isDatePicker) {
       if (typeof result.value === 'string') result.value = dayjs(result.value);
@@ -102,7 +102,7 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
     isLoading,
     valueType,
     Component,
-    propsCpn: convertDataToProps(propsCpn),
+    propsCpn: convertToPlainProps(propsCpn, getData),
     findVariable,
     dataState,
   };

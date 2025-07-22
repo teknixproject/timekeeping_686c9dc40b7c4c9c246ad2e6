@@ -345,7 +345,7 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
     (data: TData | null | undefined, valueStream?: any) => {
       if (_.isEmpty(data) && valueStream) return valueStream;
       if (_.isEmpty(data) && props.valueStream) return props.valueStream;
-      if (_.isEmpty(data) || !data.type) return data?.defaultValue;
+      if (_.isEmpty(data) || !data.type) return data?.defaultValue || data?.valueInput;
 
       switch (data.type) {
         case 'valueInput':
@@ -375,7 +375,7 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
         case 'condition':
           return handleCondition(data);
         default:
-          return data?.defaultValue;
+          return data?.defaultValue || data.valueInput;
       }
     },
     [handleApiResponse, handleState]

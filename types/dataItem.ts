@@ -35,6 +35,7 @@ export type TData = {
     paramName: string;
   };
   itemInList: { jsonPath?: string };
+  formData: { jsonPath?: string };
   combineText?: TCombineText;
   dynamicGenerate?: TDataField;
   apiResponse?: TDataField;
