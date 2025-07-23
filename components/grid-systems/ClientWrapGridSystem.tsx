@@ -79,6 +79,7 @@ export const PreviewUI: FC = () => {
 
   const isSidebarLeft = sidebarPosition === 'left';
   const isSidebarRight = sidebarPosition === 'right';
+  const isPreviewSidebar = !isSidebarLeft && !isSidebarRight && !_.isEmpty(selectedSidebarLayout)
 
   // Conditional rendering AFTER all hooks have been called
   if (isLoading) {
@@ -89,13 +90,15 @@ export const PreviewUI: FC = () => {
     return <></>;
   }
 
-  console.log('selectedHeaderLayout', {
-    selectedHeaderLayout,
-    selectedSidebarLayout,
-    selectedBodyLayout,
-    selectedFooterLayout
-  });
-
+  const renderSidebar = (
+    <div id="sidebar" style={{ ...sidebarStyle }} className="sticky top-0 z-10 max-h-screen overflow-hidden">
+      <GridSystemContainer
+        page={selectedSidebarLayout}
+        deviceType={deviceType}
+        isHeader
+      />
+    </div>
+  )
 
   return (
     <div className="relative !z-0 h-screen">
@@ -109,37 +112,18 @@ export const PreviewUI: FC = () => {
           />
         </div>
       )}
+
       <div className="z-10 flex">
-        {isSidebarLeft && !_.isEmpty(selectedSidebarLayout) && (
-          <div id="sidebar" style={{ ...sidebarStyle }} className="sticky top-0 z-10 max-h-screen overflow-hidden">
-            <GridSystemContainer
-              page={selectedSidebarLayout}
-              deviceType={deviceType}
-              isHeader
-            />
-          </div>
-        )}
+        {isPreviewSidebar && renderSidebar}
+        {isSidebarLeft && !_.isEmpty(selectedSidebarLayout) && renderSidebar}
         <main style={{ flex: 1, overflow: 'hidden' }}>
-          {/* {!_.isEmpty(selectedBodyLayout) ? (
-            <GridSystemContainer page={selectedBodyLayout || {}} deviceType={deviceType} isBody />
-          ) : (
-            <div className="h-[300px]" />
-          )} */}
           <div className="relative h-screen">
             {!_.isEmpty(selectedBodyLayout) && (
               <GridSystemContainer page={selectedBodyLayout} deviceType={deviceType} isBody />
             )}
           </div>
         </main>
-        {isSidebarRight && !_.isEmpty(selectedSidebarLayout) && (
-          <div id="sidebar" style={{ ...sidebarStyle }} className="sticky top-0 z-10 max-h-screen overflow-hidden">
-            <GridSystemContainer
-              page={selectedSidebarLayout}
-              deviceType={deviceType}
-              isHeader
-            />
-          </div>
-        )}
+        {isSidebarRight && !_.isEmpty(selectedSidebarLayout) && renderSidebar}
       </div>
       {!_.isEmpty(selectedFooterLayout) && (
         <GridSystemContainer
