@@ -35,7 +35,7 @@ const handleCompareValue = ({
 };
 type TUseHandleData = {
   dataProp?: { name: string; data: TData }[];
-
+  valueProps?: Record<string, TData>;
   valueStream?: any;
 };
 
@@ -235,6 +235,8 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
 
   //#region handle item list
   const handleItemInList = (data: TData, valueStream: any) => {
+    console.log('🚀 ~ handleItemInList ~ valueStream:', { data, valueStream });
+
     const { jsonPath } = data.itemInList;
     if (jsonPath) {
       const result = JSONPath({
