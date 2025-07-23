@@ -12,6 +12,7 @@ import { useHandleProps } from '@/hooks/useHandleProps';
 import { stateManagementStore } from '@/stores';
 import { GridItem } from '@/types/gridItem';
 import { getComponentType } from '@/uitls/component';
+import { cleanProps } from '@/uitls/renderItem';
 import { convertCssObjectToCamelCase, convertToEmotionStyle } from '@/uitls/styleInline';
 import { convertToPlainProps } from '@/uitls/transfromProp';
 import { css } from '@emotion/react';
@@ -102,7 +103,7 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
     isLoading,
     valueType,
     Component,
-    propsCpn: convertToPlainProps(propsCpn, getData),
+    propsCpn: cleanProps(convertToPlainProps(propsCpn, getData), valueType),
     findVariable,
     dataState,
   };
