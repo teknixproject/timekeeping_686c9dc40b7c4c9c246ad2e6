@@ -24,7 +24,7 @@ export const RenderUIClient: FC = () => {
   }
 
   return (
-    <div className="relative h-screen">
+    <div className="relative h-screen overflow-y-auto">
       {!_.isEmpty(selectedBodyLayout) && (
         <GridSystemContainer page={selectedBodyLayout} deviceType={deviceType} isBody />
       )}
@@ -117,7 +117,7 @@ export const PreviewUI: FC = () => {
         {isPreviewSidebar && renderSidebar}
         {isSidebarLeft && !_.isEmpty(selectedSidebarLayout) && renderSidebar}
         <main style={{ flex: 1, overflow: 'hidden' }}>
-          <div className="relative h-screen">
+          <div className="relative h-screen overflow-y-auto">
             {!_.isEmpty(selectedBodyLayout) && (
               <GridSystemContainer page={selectedBodyLayout} deviceType={deviceType} isBody />
             )}
