@@ -76,14 +76,14 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
 
     staticProps.css = handleCssWithEmotion(staticProps);
 
-    const result =
+    let result =
       valueType === 'menu'
         ? { ...staticProps, ...actions }
         : {
-          ...staticProps,
-          ...dataState,
-          ...actions,
-        };
+            ...staticProps,
+            ...dataState,
+            ...actions,
+          };
 
     if (isDatePicker) {
       if (typeof result.value === 'string') result.value = dayjs(result.value);
@@ -94,6 +94,9 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
     }
     if ('styleMultiple' in result) _.unset(result, 'styleMultiple');
     if ('dataProps' in result) _.unset(result, 'dataProps');
+    const plainProps = convertToPlainProps(result, getData);
+
+    result = cleanProps(plainProps, valueType);
 
     return result;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,7 +106,7 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
     isLoading,
     valueType,
     Component,
-    propsCpn: cleanProps(convertToPlainProps(propsCpn, getData), valueType),
+    propsCpn,
     findVariable,
     dataState,
   };
@@ -117,7 +120,7 @@ const ComponentRenderer: FC<{
   children?: React.ReactNode;
 }> = ({ Component, propsCpn, data, children }) => {
   // console.log('ComponentRenderer', propsCpn?.style);
-  const { style, ...newPropsCpn } = propsCpn
+  const { style, ...newPropsCpn } = propsCpn;
 
   return (
     <Component key={data?.id} {...newPropsCpn}>
