@@ -78,7 +78,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
   const isSidebarRight = sidebarPosition === 'right'
 
   return (
-    <div className="relative !z-0">
+    <div className="relative !z-0 h-screen">
       {
         !_.isEmpty(selectedHeaderLayout) && (
           <div id="header" ref={headerRef} className="sticky top-0 z-10 max-h-screen overflow-hidden">
@@ -101,7 +101,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
             />
           </div>
         )}
-        <main style={{ flex: 1, overflow: 'hidden' }}>{children}</main>
+        <main className='h-screen' style={{ flex: 1, overflow: 'hidden' }}>{children}</main>
         {isSidebarRight && !_.isEmpty(selectedSidebarLayout) && (
           <div id="sidebar" style={{ ...sidebarStyle }} className="sticky top-0 z-10 max-h-screen overflow-hidden">
             <GridSystemContainer
