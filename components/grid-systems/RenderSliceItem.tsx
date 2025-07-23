@@ -18,6 +18,7 @@ import { convertToPlainProps } from '@/uitls/transfromProp';
 import { css } from '@emotion/react';
 
 import { componentRegistry, convertProps } from './ListComponent';
+import LoadingPage from './loadingPage';
 
 type TProps = {
   data: GridItem;
@@ -51,19 +52,19 @@ const handleCssWithEmotion = (staticProps: Record<string, any>) => {
 };
 // Custom hook to extract common logic
 const useRenderItem = (data: GridItem, valueStream?: any) => {
+  const valueType = useMemo(() => data?.value?.toLowerCase() || '', [data?.value]);
   const { isForm, isNoChildren, isChart, isDatePicker } = getComponentType(data?.value || '');
   const { findVariable } = stateManagementStore();
   const { dataState, getData } = useHandleData({
     dataProp: getPropData(data),
+    componentProps: data?.componentProps,
     valueStream,
+    valueType,
   });
-  console.log(`🚀 ~ useRenderItem ~ dataState:${data.id}`, dataState);
 
   const { actions } = useHandleProps({ dataProps: getPropActions(data) });
 
   const { isLoading } = useActions(data);
-
-  const valueType = useMemo(() => data?.value?.toLowerCase() || '', [data?.value]);
 
   const Component = useMemo(
     () => (valueType ? _.get(componentRegistry, valueType) || 'div' : 'div'),
@@ -72,7 +73,7 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
 
   const propsCpn = useMemo(() => {
     const staticProps = {
-      ...convertProps({ data }),
+      ...convertProps({ initialProps: dataState, valueType }),
     };
 
     staticProps.css = handleCssWithEmotion(staticProps);
@@ -131,12 +132,14 @@ const ComponentRenderer: FC<{
 };
 
 const RenderSliceItem: FC<TProps> = (props) => {
-  const { data, valueStream } = props;
-  console.log(`🚀 ~ { data, valueStream }:`, { data, valueStream });
+  const { data, valueStream } = useMemo(() => props, [props]);
+
   const { isLoading, valueType, Component, propsCpn, dataState } = useRenderItem(data, valueStream);
+  console.log(`🚀 ~ propsCpn: ${data.id}`, propsCpn);
+
   const { isForm, isNoChildren, isChart, isMap } = getComponentType(data?.value || '');
   if (!valueType) return <div></div>;
-  if (isLoading) return;
+  if (isLoading) return <LoadingPage />;
   if (isForm) return <RenderForm {...props} />;
 
   if (isNoChildren || isChart) return <Component key={data?.id} {...propsCpn} />;

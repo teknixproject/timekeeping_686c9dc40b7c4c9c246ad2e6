@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import dayjs from 'dayjs';
 /* eslint-disable react-hooks/exhaustive-deps */
 import { JSONPath } from 'jsonpath-plus';
-import _ from 'lodash';
+import _, { isEqual } from 'lodash';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -11,6 +12,7 @@ import { TConditionChildMap, TTypeSelect, TVariable } from '@/types';
 import { TData, TDataField, TOptionApiResponse } from '@/types/dataItem';
 import { executeConditionalInData } from '@/uitls/handleConditionInData';
 import { transformVariable } from '@/uitls/tranformVariable';
+import { isTData } from '@/uitls/transfromProp';
 
 import { handleCustomFunction } from './handleCustomFunction';
 import { findRootConditionChild, handleCompareCondition } from './useConditionAction';
@@ -35,8 +37,9 @@ const handleCompareValue = ({
 };
 type TUseHandleData = {
   dataProp?: { name: string; data: TData }[];
-  valueProps?: Record<string, TData>;
+  componentProps?: Record<string, TData>;
   valueStream?: any;
+  valueType: string;
 };
 
 const getIdInData = (data: TData) => {
@@ -69,7 +72,6 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
   };
   useEffect(() => {
     // const ids = getVariableIdsFormData(props.dataProp);
-
     const dataMultiple = props.dataProp?.reduce((obj, item) => {
       return {
         ...obj,
@@ -77,8 +79,50 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
       };
     }, {});
 
-    setDataState(dataMultiple);
-  }, [appState, globalState, componentState, apiResponseState, props.valueStream]);
+    const componentConverted = Object.entries(props?.componentProps || {}).reduce(
+      (obj, [key, value]) => {
+        if (isTData(value)) {
+          const data = {
+            type: value.type,
+            [value.type]: value[value.type],
+          } as TData;
+
+          let valueConvert = getData(data, props.valueStream);
+          if (props.valueType?.toLowerCase() === 'datepicker') {
+            if (key === 'value' || key === 'defaultValue') {
+              valueConvert = dayjs(valueConvert);
+            }
+          }
+          return {
+            ...obj,
+            [key]: getData(data, props.valueStream),
+          };
+        }
+        return {
+          ...obj,
+          [key]: value,
+        };
+      },
+      {}
+    );
+    const reslt = {
+      ...dataMultiple,
+      ...componentConverted,
+    };
+
+    setDataState((prev: Record<string, any>) => {
+      if (isEqual(prev, reslt)) return prev;
+      return reslt;
+    });
+  }, [
+    appState,
+    globalState,
+    componentState,
+    apiResponseState,
+    props.componentProps,
+    props.valueStream,
+    props.dataProp,
+  ]);
 
   useEffect(() => {
     dataPropRef.current = props.dataProp;
@@ -102,7 +146,6 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
               json: value?.value,
               path: getData(item.jsonPath as TData) || '',
             });
-            console.log('🚀 ~ useHandleData ~ valueJsonPath:', valueJsonPath);
             return valueJsonPath?.[0];
           case 'statusCode':
             return value?.statusCode;
@@ -235,8 +278,6 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
 
   //#region handle item list
   const handleItemInList = (data: TData, valueStream: any) => {
-    console.log('🚀 ~ handleItemInList ~ valueStream:', { data, valueStream });
-
     const { jsonPath } = data.itemInList;
     if (jsonPath) {
       const result = JSONPath({

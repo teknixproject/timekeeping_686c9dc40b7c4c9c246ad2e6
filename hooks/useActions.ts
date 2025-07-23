@@ -157,7 +157,6 @@ export const useActions = (data?: GridItem): TUseActions => {
 
   useEffect(() => {
     if (mounted.current && !_.isEmpty(actions) && 'onPageLoad' in actions) {
-      console.log('🚀 ~ useEffect ~ actions:', actions);
       handleAction('onPageLoad');
     }
   }, [mounted.current]);
