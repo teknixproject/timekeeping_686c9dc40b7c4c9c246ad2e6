@@ -1,30 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import {
-  Badge,
-  Button,
-  Card,
-  Checkbox,
-  Collapse,
-  DatePicker,
-  Drawer,
-  Dropdown,
-  DropdownProps,
-  Form,
-  Image,
-  Input,
-  InputNumber,
-  List,
-  Modal,
-  Popover,
-  Radio,
-  Select,
-  Statistic,
-  Table,
-  TableProps,
-  Tabs,
-  Tag,
-  Typography,
+    Badge, Button, Card, Checkbox, Collapse, DatePicker, Drawer, Dropdown, DropdownProps, Form,
+    Image, Input, InputNumber, List, Modal, Popover, Radio, Select, Statistic, Table, TableProps,
+    Tabs, Tag, Typography
 } from 'antd';
 import GoogleMapReact from 'google-map-react';
 import _ from 'lodash';
@@ -149,7 +128,9 @@ export const convertProps = ({ data }: { data: GridItem }) => {
         columns: data?.componentProps?.columns?.map((item: any) => {
           return {
             ...item,
-            render: (value: any) => <RenderSliceItem data={item.box} valueStream={value} />,
+            render: (value: any) => {
+              return <RenderSliceItem data={item.box} valueStream={value} key={item.box.id} />;
+            },
           };
         }),
         summary,

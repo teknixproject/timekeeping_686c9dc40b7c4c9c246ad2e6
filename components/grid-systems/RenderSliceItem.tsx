@@ -57,6 +57,7 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
     dataProp: getPropData(data),
     valueStream,
   });
+  console.log(`🚀 ~ useRenderItem ~ dataState:${data.id}`, dataState);
 
   const { actions } = useHandleProps({ dataProps: getPropActions(data) });
 
@@ -80,8 +81,8 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
       valueType === 'menu'
         ? { ...staticProps, ...actions }
         : {
-            ...staticProps,
             ...dataState,
+            ...staticProps,
             ...actions,
           };
 
@@ -131,8 +132,8 @@ const ComponentRenderer: FC<{
 
 const RenderSliceItem: FC<TProps> = (props) => {
   const { data, valueStream } = props;
+  console.log(`🚀 ~ { data, valueStream }:`, { data, valueStream });
   const { isLoading, valueType, Component, propsCpn, dataState } = useRenderItem(data, valueStream);
-  // console.log(`🚀 ~ propsCpn:${data.id}`, propsCpn);
   const { isForm, isNoChildren, isChart, isMap } = getComponentType(data?.value || '');
   if (!valueType) return <div></div>;
   if (isLoading) return;
