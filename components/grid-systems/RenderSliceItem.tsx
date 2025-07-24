@@ -136,7 +136,7 @@ const RenderSliceItem: FC<TProps> = (props) => {
   const { data, valueStream } = useMemo(() => props, [props]);
 
   const { isLoading, valueType, Component, propsCpn, dataState } = useRenderItem(data, valueStream);
-  console.log(`🚀 ~ propsCpn: ${data.id}`, propsCpn);
+  // console.log(`🚀 ~ propsCpn: ${data.id}`, propsCpn);
 
   const { isForm, isNoChildren, isChart, isMap } = getComponentType(data?.value || '');
   if (!valueType) return <div></div>;
@@ -176,7 +176,16 @@ const RenderForm: FC<TProps> = (props) => {
   const formKeys = useMemo(() => data?.componentProps?.formKeys, [data?.componentProps?.formKeys]);
 
   const onSubmit = (formData: any) => {
-    setFormData(formData);
+    const convertFormData = _.reduce(
+      formKeys,
+      (acc, { key, value }) => {
+        acc[key] = formData[value] || formData[key];
+        return acc;
+      },
+      {} as Record<string, any>
+    );
+
+    setFormData(convertFormData);
     propsCpn?.onFinish();
   };
 
@@ -209,6 +218,7 @@ const RenderForm: FC<TProps> = (props) => {
 const RenderFormItem: FC<TProps> = (props) => {
   const { data, formKeys, valueStream } = props;
   const { isLoading, valueType, Component, propsCpn, dataState } = useRenderItem(data, valueStream);
+  const { name, ...rest } = useMemo(() => propsCpn, [propsCpn]);
   const { control } = useFormContext();
   const { isInput } = getComponentType(data?.value || '');
 
@@ -222,16 +232,16 @@ const RenderFormItem: FC<TProps> = (props) => {
         <Controller
           control={control}
           name={inFormKeys.key}
-          render={({ field }) => <Component {...propsCpn} {...field} />}
+          render={({ field }) => <Component {...rest} {...field} />}
         />
       );
     }
-    return <Component {...propsCpn} />;
+    return <Component {...rest} />;
   }
   if (!valueType) return <div></div>;
   if (isLoading) return;
   return (
-    <ComponentRenderer Component={Component} propsCpn={propsCpn} data={data}>
+    <ComponentRenderer Component={Component} propsCpn={rest} data={data}>
       {data?.childs?.map((child) => (
         <RenderFormItem {...props} data={child} key={`form-child-${child.id}`} />
       ))}
