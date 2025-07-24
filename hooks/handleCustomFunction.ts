@@ -55,13 +55,11 @@ export const handleCustomFunction = async ({
     props: TCustomFunction['props'],
     inputs: TData['customFunction']['props']
   ) {
-    console.log('🚀 ~ inputs:', inputs);
     const args: Record<string, any> = {};
 
     props.forEach((prop) => {
       if (!prop.key) return;
       const rawData = getData(inputs?.find((item) => item.key === prop.key)?.value || null);
-      console.log('🚀 ~ props.forEach ~ rawData:', rawData);
 
       args[prop.key] = convertValueByType(rawData, prop.type, prop.isList);
     });

@@ -20,7 +20,16 @@ const { isUseVariable, extractAllValuesFromTemplate } = variableUtil;
 export type TUseActions = {
   handleApiCallAction: (action: TAction<TActionApiCall>) => Promise<void>;
 };
+const convertUrl = (apiCallMember: TApiCallValue, fallbackUrl?: string): string => {
+  const baseUrl = apiCallMember?.url || fallbackUrl || '';
 
+  if (!apiCallMember?.variables?.length) return baseUrl;
+
+  return apiCallMember.variables.reduce(
+    (url, { key, value }) => url.replace(`[${key}]`, String(value)),
+    baseUrl
+  );
+};
 export const useApiCallAction = (): TUseActions => {
   const router = useRouter();
   const { getApiMember } = useApiCall();
@@ -115,7 +124,7 @@ export const useApiCallAction = (): TUseActions => {
       const response = await axios.request({
         baseURL: apiCall?.baseUrl || '',
         method: apiCall?.method?.toUpperCase(),
-        url: apiCall.url,
+        url: convertUrl(apiCall),
         headers: convertHeader(apiCall),
         data: ['POST', 'PUT', 'PATCH'].includes(apiCall?.method?.toUpperCase() || '') && body,
         params: ['GET'].includes(apiCall?.method?.toUpperCase() || '') && convertQuery(apiCall),
