@@ -62,8 +62,6 @@ export const useNavigateAction = ({ data, valueStream }: TProps): TUseActions =>
       if (!url) return;
 
       const urlConverted = buildPathFromPattern(url, parameters, getData, valueStream);
-      console.log('🚀 ~ handleNavigateAction ~ valueStream:', valueStream);
-      console.log('🚀 ~ handleNavigateAction ~ urlConverted:', urlConverted);
 
       if (!isValidUrl(urlConverted)) {
         return;

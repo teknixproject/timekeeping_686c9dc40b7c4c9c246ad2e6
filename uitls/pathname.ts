@@ -32,10 +32,6 @@ export function buildPathFromPattern(
   valueStream: any
 ) {
   return params.reduce((acc, { key, value }) => {
-    console.log(`🚀 ~ returnparams.reduce ~ { key, value }:`, { key, value });
-    const valuePro = getData(value);
-    console.log('🚀 ~ returnparams.reduce ~ valuePro:', valuePro);
-
     return acc.replace(`[${key}]`, encodeURIComponent(getData(value, valueStream)));
   }, pattern);
 }

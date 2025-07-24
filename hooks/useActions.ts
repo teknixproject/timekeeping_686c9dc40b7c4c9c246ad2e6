@@ -3,16 +3,8 @@ import _ from 'lodash';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
-  TAction,
-  TActionApiCall,
-  TActionCustomFunction,
-  TActionLoop,
-  TActionNavigate,
-  TActionUpdateState,
-  TConditional,
-  TConditionChildMap,
-  TTriggerActions,
-  TTriggerValue,
+    TAction, TActionApiCall, TActionCustomFunction, TActionLoop, TActionNavigate,
+    TActionUpdateState, TConditional, TConditionChildMap, TTriggerActions, TTriggerValue
 } from '@/types';
 import { GridItem } from '@/types/gridItem';
 import { transformVariable } from '@/uitls/tranformVariable';
@@ -43,10 +35,7 @@ export const useActions = (props: TActionsProps): TUseActions => {
   const { data, valueStream } = useMemo(() => {
     return props;
   }, [props]);
-  console.log(`🚀 ~ const{data,valueStream}=useMemo ~ { data , valueStream} :${data?.id}`, {
-    data,
-    valueStream,
-  });
+
   const actions = useMemo(() => _.get(data, 'actions') as TTriggerActions, [data]);
   const setMultipleActions = actionHookSliceStore((state) => state.setMultipleActions);
   const findAction = actionHookSliceStore((state) => state.findAction);
@@ -64,7 +53,6 @@ export const useActions = (props: TActionsProps): TUseActions => {
     if (_.isEmpty(conditions)) return;
     for (const conditionId of conditions) {
       const condition = findAction(conditionId) as TAction<TConditionChildMap>;
-      console.log('🚀 ~ executeConditional ~ condition:', condition);
 
       if (condition) {
         executeActionFCType(condition);
@@ -83,7 +71,6 @@ export const useActions = (props: TActionsProps): TUseActions => {
         break;
       case 'conditionalChild':
         const isMatch = await executeConditionalChild(action as TAction<TConditionChildMap>);
-        console.log('🚀 ~ executeActionFCType ~ isMatch:', { action, isMatch });
         const conditionChildData = action?.data as TConditionChildMap;
         const isReturnValue = (action?.data as TConditionChildMap)?.isReturnValue;
         if (isReturnValue && isMatch) {
@@ -139,7 +126,6 @@ export const useActions = (props: TActionsProps): TUseActions => {
     formData?: Record<string, any>
   ): Promise<void> => {
     const actionsToExecute = triggerActions[triggerType];
-    console.log('🚀 ~ useActions ~ actionsToExecute:', actionsToExecute);
 
     await setMultipleActions({
       actions: triggerActions,
