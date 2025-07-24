@@ -3,13 +3,21 @@ import _ from 'lodash';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
-    TAction, TActionApiCall, TActionCustomFunction, TActionLoop, TActionNavigate,
-    TActionUpdateState, TConditional, TConditionChildMap, TTriggerActions, TTriggerValue
+  TAction,
+  TActionApiCall,
+  TActionCustomFunction,
+  TActionLoop,
+  TActionNavigate,
+  TActionUpdateState,
+  TConditional,
+  TConditionChildMap,
+  TTriggerActions,
+  TTriggerValue,
 } from '@/types';
 import { GridItem } from '@/types/gridItem';
 import { transformVariable } from '@/uitls/tranformVariable';
 
-import { actionHookSliceStore } from './actionSliceStore';
+import { actionHookSliceStore } from './store/actionSliceStore';
 import { useApiCallAction } from './useApiCallAction';
 import { useConditionChildAction } from './useConditionChildAction';
 import { useCustomFunction } from './useCustomFunction';
@@ -27,7 +35,18 @@ export type TUseActions = {
   executeActionFCType: (action?: TAction) => Promise<void>;
 };
 
-export const useActions = (data?: GridItem): TUseActions => {
+export type TActionsProps = {
+  data?: GridItem;
+  valueStream?: any;
+};
+export const useActions = (props: TActionsProps): TUseActions => {
+  const { data, valueStream } = useMemo(() => {
+    return props;
+  }, [props]);
+  console.log(`🚀 ~ const{data,valueStream}=useMemo ~ { data , valueStream} :${data?.id}`, {
+    data,
+    valueStream,
+  });
   const actions = useMemo(() => _.get(data, 'actions') as TTriggerActions, [data]);
   const setMultipleActions = actionHookSliceStore((state) => state.setMultipleActions);
   const findAction = actionHookSliceStore((state) => state.findAction);
@@ -35,7 +54,7 @@ export const useActions = (data?: GridItem): TUseActions => {
   // const { executeConditional } = useConditionAction();
   const { executeConditionalChild } = useConditionChildAction();
   const { handleUpdateStateAction } = useUpdateStateAction();
-  const { handleNavigateAction } = useNavigateAction();
+  const { handleNavigateAction } = useNavigateAction({ data, valueStream });
   const { executeLoopOverList } = useLoopActions();
   const { handleCustomFunction } = useCustomFunction();
   const [isLoading, setIsLoading] = useState(false);

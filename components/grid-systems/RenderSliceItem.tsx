@@ -5,7 +5,7 @@ import _ from 'lodash';
 import { FC, useMemo } from 'react';
 import { Controller, FormProvider, useForm, useFormContext } from 'react-hook-form';
 
-import { actionHookSliceStore } from '@/hooks/actionSliceStore';
+import { actionHookSliceStore } from '@/hooks/store/actionSliceStore';
 import { useActions } from '@/hooks/useActions';
 import { useHandleData } from '@/hooks/useHandleData';
 import { useHandleProps } from '@/hooks/useHandleProps';
@@ -60,11 +60,12 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
     componentProps: data?.componentProps,
     valueStream,
     valueType,
+    activeData: data,
   });
 
-  const { actions } = useHandleProps({ dataProps: getPropActions(data) });
+  const { actions } = useHandleProps({ dataProps: getPropActions(data), data, valueStream });
 
-  const { isLoading } = useActions(data);
+  const { isLoading } = useActions({ data, valueStream });
 
   const Component = useMemo(
     () => (valueType ? _.get(componentRegistry, valueType) || 'div' : 'div'),
@@ -72,7 +73,7 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
   );
 
   const propsCpn = useMemo(() => {
-    const staticProps = {
+    const staticProps: Record<string, any> = {
       ...convertProps({ initialProps: dataState, valueType }),
     };
 
@@ -170,7 +171,7 @@ const RenderForm: FC<TProps> = (props) => {
     values: dataState,
   });
   const { handleSubmit } = methods;
-  const { handleAction } = useActions();
+  const { handleAction } = useActions(props);
   const setFormData = actionHookSliceStore((state) => state.setFormData);
   const formKeys = useMemo(() => data?.componentProps?.formKeys, [data?.componentProps?.formKeys]);
 

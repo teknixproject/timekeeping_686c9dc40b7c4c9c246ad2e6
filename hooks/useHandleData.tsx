@@ -2,14 +2,15 @@
 import dayjs from 'dayjs';
 /* eslint-disable react-hooks/exhaustive-deps */
 import { JSONPath } from 'jsonpath-plus';
-import _, { isEqual } from 'lodash';
+import _ from 'lodash';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { stateManagementStore } from '@/stores';
 import { customFunctionStore } from '@/stores/customFunction';
 import { TConditionChildMap, TTypeSelect, TVariable } from '@/types';
 import { TData, TDataField, TOptionApiResponse } from '@/types/dataItem';
+import { GridItem } from '@/types/gridItem';
 import { executeConditionalInData } from '@/uitls/handleConditionInData';
 import { transformVariable } from '@/uitls/tranformVariable';
 import { isTData } from '@/uitls/transfromProp';
@@ -39,7 +40,8 @@ type TUseHandleData = {
   dataProp?: { name: string; data: TData }[];
   componentProps?: Record<string, TData>;
   valueStream?: any;
-  valueType: string;
+  valueType?: string;
+  activeData?: GridItem;
 };
 
 const getIdInData = (data: TData) => {
@@ -57,77 +59,37 @@ const getVariableIdsFormData = (dataProps: TUseHandleData['dataProp']) => {
 export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
   const params = useParams();
   const [customFunctionResult, setCustomFunctionResult] = useState(null);
+  // const { getState } = actionHookSliceStore;
   const apiResponseState = stateManagementStore((state) => state.apiResponse);
   const findCustomFunction = customFunctionStore((state) => state.findCustomFunction);
   const appState = stateManagementStore((state) => state.appState);
   const componentState = stateManagementStore((state) => state.componentState);
   const globalState = stateManagementStore((state) => state.globalState);
-  const [dataState, setDataState] = useState<any>();
+  // const [dataState, setDataState] = useState<any>();
   const itemInList = useRef(null);
-  const dataPropRef = useRef<TUseHandleData['dataProp']>(null);
-  const valueStreamRef = useRef<TUseHandleData['valueStream']>(null);
   const findVariable = stateManagementStore((state) => state.findVariable);
+
   const handleInputValue = (data: TData['valueInput']) => {
     return data || '';
   };
-  useEffect(() => {
-    // const ids = getVariableIdsFormData(props.dataProp);
-    const dataMultiple = props.dataProp?.reduce((obj, item) => {
-      return {
-        ...obj,
-        [item.name]: getData(item.data, props.valueStream),
-      };
-    }, {});
 
-    const componentConverted = Object.entries(props?.componentProps || {}).reduce(
-      (obj, [key, value]) => {
-        if (isTData(value)) {
-          const data = {
-            type: value.type,
-            [value.type]: value[value.type],
-          } as TData;
+  // useEffect(() => {
+  //   // const ids = getVariableIdsFormData(props.dataProp);
 
-          let valueConvert = getData(data, props.valueStream);
-          if (props.valueType?.toLowerCase() === 'datepicker') {
-            if (key === 'value' || key === 'defaultValue') {
-              valueConvert = dayjs(valueConvert);
-            }
-          }
-          return {
-            ...obj,
-            [key]: getData(data, props.valueStream),
-          };
-        }
-        return {
-          ...obj,
-          [key]: value,
-        };
-      },
-      {}
-    );
-    const reslt = {
-      ...dataMultiple,
-      ...componentConverted,
-    };
+  //   setDataState((prev: Record<string, any>) => {
+  //     if (isEqual(prev, reslt)) return prev;
+  //     return reslt;
+  //   });
+  // }, [
+  //   appState,
+  //   globalState,
+  //   componentState,
+  //   apiResponseState,
+  //   props.componentProps,
+  //   props.valueStream,
+  //   props.dataProp,
+  // ]);
 
-    setDataState((prev: Record<string, any>) => {
-      if (isEqual(prev, reslt)) return prev;
-      return reslt;
-    });
-  }, [
-    appState,
-    globalState,
-    componentState,
-    apiResponseState,
-    props.componentProps,
-    props.valueStream,
-    props.dataProp,
-  ]);
-
-  useEffect(() => {
-    dataPropRef.current = props.dataProp;
-    valueStreamRef.current = props.valueStream;
-  }, [props]);
   //#region handle api
   const handleApiResponse = useCallback(
     (data: TData) => {
@@ -278,15 +240,17 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
 
   //#region handle item list
   const handleItemInList = (data: TData, valueStream: any) => {
+    console.log(`🚀 ~ handleItemInList ~ data:${props.activeData?.id}`, { data, valueStream });
+
     const { jsonPath } = data.itemInList;
     if (jsonPath) {
       const result = JSONPath({
-        json: valueStream || itemInList.current,
+        json: valueStream || props.valueStream,
         path: jsonPath || '',
       })?.[0];
       return result;
     }
-    return valueStream || itemInList.current;
+    return valueStream || props.valueStream;
   };
 
   //#region handle custom function
@@ -373,6 +337,7 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
 
   const handleParemeters = (data: TData) => {
     const paramName = data?.parameters?.paramName;
+
     if (!paramName) return '';
     const result = params[paramName];
     return result;
@@ -386,6 +351,8 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
   //#region getData
   const getData = useCallback(
     (data: TData | null | undefined, valueStream?: any) => {
+      console.log('🚀 ~ useHandleData ~ data:', { data, valueStream });
+
       if (_.isEmpty(data) && valueStream) return valueStream;
       if (_.isEmpty(data) && props.valueStream) return props.valueStream;
       if (_.isEmpty(data) || !data.type) return data?.defaultValue || data?.valueInput;
@@ -421,7 +388,17 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
           return data?.defaultValue || data.valueInput;
       }
     },
-    [handleApiResponse, handleState]
+    [
+      handleApiResponse,
+      handleState,
+      handleInputValue,
+      handleItemInList,
+      handleDynamicGenerate,
+      handleCustomFunction,
+      handleCondition,
+      findCustomFunction,
+      props,
+    ]
   );
   //#region tracking
 
@@ -443,7 +420,55 @@ export const useHandleData = (props: TUseHandleData): UseHandleDataReturn => {
     const result = getData(data, valueStream);
     return result;
   }, []);
+  const dataState = useMemo(() => {
+    const dataMultiple = props.dataProp?.reduce((obj, item) => {
+      return {
+        ...obj,
+        [item.name]: getData(item.data, props.valueStream),
+      };
+    }, {});
 
+    const componentConverted = Object.entries(props?.componentProps || {}).reduce(
+      (obj, [key, value]) => {
+        if (isTData(value)) {
+          const data = {
+            type: value.type,
+            [value.type]: value[value.type],
+          } as TData;
+
+          let valueConvert = getData(data, props.valueStream);
+          if (props.valueType?.toLowerCase() === 'datepicker') {
+            if (key === 'value' || key === 'defaultValue') {
+              valueConvert = dayjs(valueConvert);
+            }
+          }
+          return {
+            ...obj,
+            [key]: valueConvert,
+          };
+        }
+        return {
+          ...obj,
+          [key]: value,
+        };
+      },
+      {}
+    );
+    const reslt = {
+      ...dataMultiple,
+      ...componentConverted,
+    };
+
+    return reslt;
+  }, [
+    appState,
+    globalState,
+    componentState,
+    apiResponseState,
+    props.componentProps,
+    props.valueStream,
+    props.dataProp,
+  ]);
   return {
     getData,
     dataState,

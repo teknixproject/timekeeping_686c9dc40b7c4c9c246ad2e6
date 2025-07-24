@@ -7,6 +7,7 @@ type TState = {
   actions: TTriggerActions;
   triggerName: TTriggerValue;
   formData: any;
+  valueStream: any;
 };
 
 type TActions = {
@@ -16,6 +17,7 @@ type TActions = {
   getFormData: () => any;
   findAction: (actionId: string) => TAction | undefined;
   setFormData: (formData: any) => void;
+  setValueStream: (valueStream: any) => void;
   reset: () => void;
 };
 
@@ -55,6 +57,10 @@ export const actionHookSliceStore = create<TState & TActions>()(
         );
       },
 
+      setValueStream: (valueStream) => {
+        console.log('[setvalueStream]', valueStream);
+        set({ valueStream }, false, 'actionHook/setvalueStream');
+      },
       findAction: (actionId) => {
         const trigger = get().triggerName;
         const action = get().actions[trigger]?.[actionId];

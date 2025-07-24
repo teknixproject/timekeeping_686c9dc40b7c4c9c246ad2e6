@@ -10,7 +10,7 @@ import {
 } from '@/types';
 import { variableUtil } from '@/uitls';
 
-import { actionHookSliceStore } from './actionSliceStore';
+import { actionHookSliceStore } from './store/actionSliceStore';
 import { useApiCall } from './useApiCall';
 import { useCustomFunction } from './useCustomFunction';
 import { useHandleData } from './useHandleData';

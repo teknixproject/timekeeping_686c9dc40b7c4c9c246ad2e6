@@ -3,7 +3,7 @@ import {
     TAction, TActionLoop, TActionLoopOverList, TConditionChildMap, TTypeSelectState
 } from '@/types';
 
-import { actionHookSliceStore } from './actionSliceStore';
+import { actionHookSliceStore } from './store/actionSliceStore';
 import { useHandleData } from './useHandleData';
 
 // Hằng số cấu hình
