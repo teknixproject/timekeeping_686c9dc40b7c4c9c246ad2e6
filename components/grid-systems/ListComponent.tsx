@@ -1,34 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import {
-  Badge,
-  Button,
-  Card,
-  Checkbox,
-  Collapse,
-  DatePicker,
-  Drawer,
-  Dropdown,
-  DropdownProps,
-  Form,
-  Image,
-  Input,
-  InputNumber,
-  List,
-  Modal,
-  Radio,
-  Select,
-  Statistic,
-  Table,
-  TableProps,
-  Tabs,
-  Tag,
-  Typography,
+    Badge, Button, Card, Checkbox, Collapse, DatePicker, Drawer, Dropdown, DropdownProps, Form,
+    Image, Input, InputNumber, List, Modal, Popover, Radio, Select, Statistic, Table, TableProps,
+    Tabs, Tag, Typography
 } from 'antd';
+import GoogleMapReact from 'google-map-react';
 import _ from 'lodash';
-import { ReactNode } from 'react';
 
-import { GridItem } from '@/types/gridItem';
 import { getComponentType } from '@/uitls/component';
 import { Bar, Column, Histogram, Line, Liquid, Pie, Radar, Rose, Stock } from '@ant-design/plots';
 import { Icon } from '@iconify/react/dist/iconify.js';
@@ -73,6 +52,7 @@ export const componentRegistry = {
   datepicker: DatePicker,
   badge: Badge,
   icon: Icon,
+  map: GoogleMapReact,
 };
 
 const convertIconStringToComponent = (iconString: string) => {
@@ -83,16 +63,21 @@ const convertIconStringToComponent = (iconString: string) => {
   return <Icon icon={iconString} />;
 };
 
-export const convertProps = ({ data }: { data: GridItem }) => {
-  if (!data) return {};
+export const convertProps = ({
+  initialProps,
+  valueType,
+}: {
+  initialProps: Record<string, any>;
+  valueType: string;
+}) => {
+  if (!initialProps) return {};
   // const value = getData(data?.data, valueStream) || dataState || valueStream;
-  const valueType = data?.value?.toLowerCase();
   const { isInput, isChart, isUseOptionsData } = getComponentType(valueType || '');
   switch (valueType) {
     case 'tabs':
       return {
-        ...data.componentProps,
-        items: data?.componentProps?.items?.map((item: any) => {
+        ...initialProps,
+        items: initialProps?.items?.map((item: any) => {
           return {
             ...item,
             children: <RenderSliceItem data={item.children} />,
@@ -102,26 +87,26 @@ export const convertProps = ({ data }: { data: GridItem }) => {
 
     case 'dropdown':
       return {
-        ...data.componentProps,
-        children: <Button>{data?.componentProps?.label || getName(data.id)}</Button>,
+        ...initialProps,
+        children: <Button>{initialProps?.label || valueType}</Button>,
       } as DropdownProps;
     case 'image':
       return {
-        ...data.componentProps,
+        ...initialProps,
       };
     case 'list':
       return {
-        ...data.componentProps,
+        ...initialProps,
         renderItem: (item: any) => {
           return (
             <List.Item>
-              <RenderSliceItem data={data.componentProps.box} valueStream={item} />
+              <RenderSliceItem data={initialProps.box} valueStream={item} />
             </List.Item>
           );
         },
       };
     case 'table':
-      const configs: any = _.cloneDeep(data?.componentProps) || {};
+      const configs: any = _.cloneDeep(initialProps) || {};
       let summary = null;
       if (configs.enableFooter && configs.footerColumns?.length > 0) {
         summary = () => (
@@ -143,26 +128,28 @@ export const convertProps = ({ data }: { data: GridItem }) => {
         );
       }
       return {
-        ...data.componentProps,
-        columns: data?.componentProps?.columns?.map((item: any) => {
+        ...initialProps,
+        columns: initialProps?.columns?.map((item: any) => {
           return {
             ...item,
-            render: (value: any) => <RenderSliceItem data={item.box} valueStream={value} />,
+            render: (value: any) => {
+              return <RenderSliceItem data={item.box} valueStream={value} key={item.box.id} />;
+            },
           };
         }),
         summary,
       } as TableProps;
     case 'modal': {
       return {
-        ...data.componentProps,
+        ...initialProps,
       };
     }
     case 'drawer': {
-      return { ...data.componentProps };
+      return { ...initialProps };
     }
 
     case 'button': {
-      const buttonProps = _.cloneDeep(data?.componentProps) || {};
+      const buttonProps = _.cloneDeep(initialProps) || {};
 
       // Xử lý icon cho Button
       if (buttonProps.iconData && buttonProps.iconData.name) {
@@ -173,46 +160,43 @@ export const convertProps = ({ data }: { data: GridItem }) => {
 
       return {
         ...buttonProps,
-        style: {
-          ...data.style,
-          ...buttonProps.style,
-        },
       };
     }
+    case 'map':
+      return {
+        ...initialProps,
+        children: initialProps.dataSource?.map((item: any) => (
+          <Maker key={`${item.lat}-${item.lng}`} lat={item.lat} lng={item.lng} text="My Marker" />
+        )),
+      };
     default:
       break;
   }
   if (isUseOptionsData) {
     return {
-      ...data.componentProps,
+      ...initialProps,
     };
   }
   if (isInput) {
     return {
-      ...data.componentProps,
+      ...initialProps,
       // style: { ...getStyleOfDevice(data), ...data?.componentProps?.style },
     };
   }
   if (isChart) {
     return {
-      ...data.componentProps,
+      ...initialProps,
       // style: { ...getStyleOfDevice(data), ...data?.componentProps?.style },
     };
   }
   return {
-    ...data.componentProps,
+    ...initialProps,
     // style: { ...getStyleOfDevice(data), ...data?.componentProps?.style },
   };
 };
 export const getName = (id: string) => id.split('$')[0];
-const wrapWithAnchor = (children: ReactNode = 'Click me') => (
-  <a
-    onClick={(e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    }}
-  >
-    <List pagination={{}} />
-    {children}
-  </a>
+const Maker = ({ text, lat, lng }: { text: string; lat: number; lng: number }) => (
+  <Popover title={text}>
+    <Icon icon={'healthicons:geo-location-outline-24px'} className="text-red-400 fill-cyan-50" />
+  </Popover>
 );

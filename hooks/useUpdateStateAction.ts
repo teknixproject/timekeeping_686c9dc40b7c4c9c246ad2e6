@@ -4,17 +4,14 @@ import { useEffect, useRef } from 'react';
 import { stateManagementStore } from '@/stores';
 import { TAction, TActionUpdateState, TTypeSelectState } from '@/types';
 
-import { actionHookSliceStore } from './actionSliceStore';
+import { actionHookSliceStore } from './store/actionSliceStore';
 import { useHandleData } from './useHandleData';
 
 export type TUseActions = {
   handleUpdateStateAction: (action: TAction<TActionUpdateState>) => Promise<void>;
 };
 
-type TProps = {
-  executeActionFCType: (action?: TAction) => Promise<void>;
-};
-export const useUpdateStateAction = ({ executeActionFCType }: TProps): TUseActions => {
+export const useUpdateStateAction = (): TUseActions => {
   // State management
 
   // Store hooks
@@ -62,10 +59,6 @@ export const useUpdateStateAction = ({ executeActionFCType }: TProps): TUseActio
         type: type as TTypeSelectState,
         dataUpdate: variableFirst,
       });
-    }
-
-    if (action?.next) {
-      await executeActionFCType(findAction(action.next));
     }
   };
 

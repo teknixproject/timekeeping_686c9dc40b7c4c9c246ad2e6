@@ -7,6 +7,7 @@ export const getComponentType = (value: string) => {
   const isInput = ['inputtext', 'inputnumber', 'textarea', 'radio', 'select', 'checkbox'].includes(
     valueType
   );
+  const isMap = ['map'].includes(valueType);
   const isDatePicker = valueType === 'datepicker';
   const isFeebBack = ['modal', 'drawer'].includes(valueType);
   return {
@@ -17,5 +18,6 @@ export const getComponentType = (value: string) => {
     isInput,
     isFeebBack,
     isDatePicker,
+    isMap,
   };
 };

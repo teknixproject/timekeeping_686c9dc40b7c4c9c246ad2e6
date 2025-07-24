@@ -3,16 +3,13 @@ import { useRouter } from 'next/navigation';
 import { TAction, TActionNavigate } from '@/types';
 import { buildPathFromPattern } from '@/uitls/pathname';
 
-import { actionHookSliceStore } from './actionSliceStore';
+import { TActionsProps } from './useActions';
 import { useHandleData } from './useHandleData';
 
 export type TUseActions = {
   handleNavigateAction: (action: TAction<TActionNavigate>) => Promise<void>;
 };
 
-type TProps = {
-  executeActionFCType: (action?: TAction) => Promise<void>;
-};
 export const normalizeUrl = (url: string): string => {
   if (!url) return '';
 
@@ -41,11 +38,10 @@ export const normalizeUrl = (url: string): string => {
     return cleanUrl;
   }
 };
-
-export const useNavigateAction = ({ executeActionFCType }: TProps): TUseActions => {
+type TProps = TActionsProps;
+export const useNavigateAction = ({ data, valueStream }: TProps): TUseActions => {
   const router = useRouter();
-  const findAction = actionHookSliceStore((state) => state.findAction);
-  const { getData } = useHandleData({});
+  const { getData } = useHandleData({ activeData: data, valueStream: valueStream });
 
   const isValidUrl = (url: string): boolean => {
     try {
@@ -65,8 +61,7 @@ export const useNavigateAction = ({ executeActionFCType }: TProps): TUseActions 
       const { url, isExternal, isNewTab, parameters = [] } = action?.data || {};
       if (!url) return;
 
-      const urlConverted = buildPathFromPattern(url, parameters, getData);
-      console.log('🚀 ~ handleNavigateAction ~ urlConverted:', urlConverted);
+      const urlConverted = buildPathFromPattern(url, parameters, getData, valueStream);
 
       if (!isValidUrl(urlConverted)) {
         return;
@@ -78,10 +73,6 @@ export const useNavigateAction = ({ executeActionFCType }: TProps): TUseActions 
         window.location.href = urlConverted;
       } else {
         router.push(urlConverted);
-      }
-
-      if (action?.next) {
-        await executeActionFCType(findAction(action.next));
       }
     } catch (error) {
       console.error('❌ Error in handleNavigateAction:', error);

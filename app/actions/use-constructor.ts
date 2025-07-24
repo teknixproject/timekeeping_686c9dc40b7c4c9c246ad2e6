@@ -18,11 +18,13 @@ export function useConstructorDataAPI(uid?: string) {
   const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
   const {
     headerLayout,
+    sidebarLayout,
     footerLayout,
-    headerPosition,
+    sidebarPosition,
     setHeaderLayout,
+    setSidebarLayout,
     setFooterLayout,
-    setHeaderPosition,
+    setSidebarPosition,
   } = useLayoutContext();
 
   const { data, error, isLoading } = useSWR(
@@ -33,29 +35,35 @@ export function useConstructorDataAPI(uid?: string) {
 
   const newHeaderLayout = _.get(data, 'data.headerLayout.layoutJson', null);
   const newHeaderId = _.get(data, 'data.headerLayout._id', '');
+  const newSidebarLayout = _.get(data, 'data.sidebarLayout.layoutJson', null);
+  const newSidebarId = _.get(data, 'data.sidebarLayout._id', '');
   const newFooterLayout = _.get(data, 'data.footerLayout.layoutJson', null);
   const newFooterId = _.get(data, 'data.footerLayout._id', '');
-  const newHeaderPosition = _.get(data, 'data.headerPosition', '');
+  const newSidebarPosition = _.get(data, 'data.sidebarPosition', '');
 
   useEffect(() => {
     if (data && !error) {
       if (newHeaderId && newHeaderId !== (headerLayout?._id || '')) {
         setHeaderLayout({ _id: newHeaderId, layoutJson: newHeaderLayout });
       }
+      if (newSidebarId && newSidebarId !== (sidebarLayout?._id || '')) {
+        setSidebarLayout({ _id: newSidebarId, layoutJson: newSidebarLayout });
+      }
       if (newFooterId && newFooterId !== (footerLayout?._id || '')) {
         setFooterLayout({ layoutJson: newFooterLayout, _id: newFooterId });
       }
-      if (newHeaderPosition && newHeaderPosition !== headerPosition) {
-        setHeaderPosition(newHeaderPosition);
+      if (newSidebarPosition && newSidebarPosition !== sidebarPosition) {
+        setSidebarPosition(newSidebarPosition);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [newHeaderId, newFooterId, newHeaderPosition]);
+  }, [newHeaderId, newFooterId, newSidebarPosition]);
 
   if (error) {
     console.error('❌ Error fetching constructor:', error);
     return {
       headerLayout: {},
+      sidebarLayout: {},
       bodyLayout: {},
       footerLayout: {},
       isLoading: false,
@@ -66,6 +74,7 @@ export function useConstructorDataAPI(uid?: string) {
   if (!data) {
     return {
       headerLayout: {},
+      sidebarLayout: {},
       bodyLayout: {},
       footerLayout: {},
       isLoading: true,
@@ -75,6 +84,7 @@ export function useConstructorDataAPI(uid?: string) {
 
   return {
     headerLayout: _.get(data, 'data.headerLayout.layoutJson', {}),
+    sidebarLayout: _.get(data, 'data.sidebarLayout.layoutJson', {}),
     bodyLayout: _.get(data, 'data.bodyLayout.layoutJson', {}),
     footerLayout: _.get(data, 'data.footerLayout.layoutJson', {}),
     isLoading: false,

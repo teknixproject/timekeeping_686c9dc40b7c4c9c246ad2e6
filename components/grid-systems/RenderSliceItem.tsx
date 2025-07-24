@@ -2,18 +2,19 @@
 import dayjs from 'dayjs';
 /** @jsxImportSource @emotion/react */
 import _ from 'lodash';
-import { FC, memo, useMemo } from 'react';
-import isEqual from 'react-fast-compare';
+import { FC, useMemo } from 'react';
 import { Controller, FormProvider, useForm, useFormContext } from 'react-hook-form';
 
+import { actionHookSliceStore } from '@/hooks/store/actionSliceStore';
 import { useActions } from '@/hooks/useActions';
 import { useHandleData } from '@/hooks/useHandleData';
 import { useHandleProps } from '@/hooks/useHandleProps';
 import { stateManagementStore } from '@/stores';
 import { GridItem } from '@/types/gridItem';
 import { getComponentType } from '@/uitls/component';
+import { cleanProps } from '@/uitls/renderItem';
 import { convertCssObjectToCamelCase, convertToEmotionStyle } from '@/uitls/styleInline';
-import { convertDataToProps } from '@/uitls/transfromProp';
+import { convertToPlainProps } from '@/uitls/transfromProp';
 import { css } from '@emotion/react';
 
 import { componentRegistry, convertProps } from './ListComponent';
@@ -24,22 +25,47 @@ type TProps = {
   valueStream?: any;
   formKeys?: { key: string; value: string }[];
 };
+const getPropData = (data: GridItem) =>
+  data?.componentProps?.dataProps?.filter((item: any) => item.type === 'data');
 
+const getPropActions = (data: GridItem) =>
+  data?.componentProps?.dataProps?.filter((item: any) => item.type.includes('MouseEventHandler'));
+const handleCssWithEmotion = (staticProps: Record<string, any>) => {
+  const advancedCss = convertToEmotionStyle(staticProps?.styleMultiple);
+  let cssMultiple;
+
+  if (typeof advancedCss === 'string') {
+    // If it's a CSS string, use template literal directly
+    cssMultiple = css`
+      ${advancedCss}
+    `;
+  } else if (advancedCss && typeof advancedCss === 'object') {
+    // If it's a CSS object, convert kebab-case to camelCase and use as object
+    const convertedCssObj = convertCssObjectToCamelCase(advancedCss);
+    cssMultiple = css(convertedCssObj);
+  } else {
+    // Fallback to empty css
+    cssMultiple = css``;
+  }
+
+  return cssMultiple;
+};
 // Custom hook to extract common logic
 const useRenderItem = (data: GridItem, valueStream?: any) => {
+  const valueType = useMemo(() => data?.value?.toLowerCase() || '', [data?.value]);
   const { isForm, isNoChildren, isChart, isDatePicker } = getComponentType(data?.value || '');
   const { findVariable } = stateManagementStore();
-  const { getData, dataState } = useHandleData({ dataProp: data?.data });
-  console.log('🚀 ~ useRenderItem ~ dataState:', dataState);
-  const actionsProp = useMemo(
-    () => data?.componentProps?.dataProps || [],
-    [data?.componentProps?.dataProps]
-  );
-  console.log('🚀 ~ useRenderItem ~ actionsProp:', actionsProp);
-  const { multiples } = useHandleProps({ actionsProp, valueStream });
-  const { handleAction, isLoading } = useActions(data);
+  const { dataState, getData } = useHandleData({
+    dataProp: getPropData(data),
+    componentProps: data?.componentProps,
+    valueStream,
+    valueType,
+    activeData: data,
+  });
 
-  const valueType = useMemo(() => data?.value?.toLowerCase() || '', [data?.value]);
+  const { actions } = useHandleProps({ dataProps: getPropActions(data), data, valueStream });
+
+  const { isLoading } = useActions({ data, valueStream });
 
   const Component = useMemo(
     () => (valueType ? _.get(componentRegistry, valueType) || 'div' : 'div'),
@@ -47,59 +73,45 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
   );
 
   const propsCpn = useMemo(() => {
-    const staticProps = {
-      ...convertProps({ data }),
-      onClick: () => handleAction('onClick'),
-      // onChange: () => handleAction('onChange'),
+    const staticProps: Record<string, any> = {
+      ...convertProps({ initialProps: dataState, valueType }),
     };
 
-    const advancedCss = convertToEmotionStyle(staticProps?.styleMultiple);
+    staticProps.css = handleCssWithEmotion(staticProps);
 
-    // Fix 1: Check if advancedCss is a string (CSS string) or object (CSS object)
-    let cssMultiple;
+    let result =
+      valueType === 'menu'
+        ? { ...staticProps, ...actions }
+        : {
+            ...dataState,
+            ...staticProps,
+            ...actions,
+          };
 
-    if (typeof advancedCss === 'string') {
-      // If it's a CSS string, use template literal directly
-      cssMultiple = css`
-        ${advancedCss}
-      `;
-    } else if (advancedCss && typeof advancedCss === 'object') {
-      // If it's a CSS object, convert kebab-case to camelCase and use as object
-      const convertedCssObj = convertCssObjectToCamelCase(advancedCss);
-      cssMultiple = css(convertedCssObj);
-    } else {
-      // Fallback to empty css
-      cssMultiple = css``;
-    }
-
-    staticProps.css = cssMultiple;
-
-    const result = {
-      ...staticProps,
-      ...multiples,
-    };
     if (isDatePicker) {
       if (typeof result.value === 'string') result.value = dayjs(result.value);
       if (typeof result.defaultValue === 'string') result.defaultValue = dayjs(result.defaultValue);
     }
-    // if (isNoChildren && 'children' in result) {
-    //   delete result.children;
-    // }
-    if ('styleMultiple' in result) delete result.styleMultiple;
-    if ('dataProps' in result) delete result.dataProps;
+    if (isNoChildren && 'children' in result) {
+      _.unset(result, 'children');
+    }
+    if ('styleMultiple' in result) _.unset(result, 'styleMultiple');
+    if ('dataProps' in result) _.unset(result, 'dataProps');
+    const plainProps = convertToPlainProps(result, getData);
+
+    result = cleanProps(plainProps, valueType);
 
     return result;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, getData, dataState, valueStream, multiples, handleAction]);
+  }, [data, dataState, valueStream]);
 
   return {
     isLoading,
     valueType,
     Component,
-    propsCpn: convertDataToProps(propsCpn),
+    propsCpn,
     findVariable,
     dataState,
-    getData,
   };
 };
 
@@ -109,23 +121,35 @@ const ComponentRenderer: FC<{
   propsCpn: any;
   data: GridItem;
   children?: React.ReactNode;
-}> = ({ Component, propsCpn, data, children }) => (
-  <Component key={data?.id} {...propsCpn}>
-    {!_.isEmpty(data?.childs) ? children : propsCpn.children}
-  </Component>
-);
+}> = ({ Component, propsCpn, data, children }) => {
+  // console.log('ComponentRenderer', propsCpn?.style);
+  const { style, ...newPropsCpn } = propsCpn;
+
+  return (
+    <Component key={data?.id} {...newPropsCpn}>
+      {!_.isEmpty(data?.childs) ? children : propsCpn.children}
+    </Component>
+  );
+};
 
 const RenderSliceItem: FC<TProps> = (props) => {
-  const { data, valueStream } = props;
+  const { data, valueStream } = useMemo(() => props, [props]);
+
   const { isLoading, valueType, Component, propsCpn, dataState } = useRenderItem(data, valueStream);
-  console.log('🚀 ~ propsCpn:', propsCpn);
-  const { isForm, isNoChildren, isChart, isFeebBack } = getComponentType(data?.value || '');
+  // console.log(`🚀 ~ propsCpn: ${data.id}`, propsCpn);
+
+  const { isForm, isNoChildren, isChart, isMap } = getComponentType(data?.value || '');
   if (!valueType) return <div></div>;
   if (isLoading) return <LoadingPage />;
   if (isForm) return <RenderForm {...props} />;
 
   if (isNoChildren || isChart) return <Component key={data?.id} {...propsCpn} />;
-
+  if (isMap)
+    return (
+      <div style={{ width: propsCpn.width || '100%', height: propsCpn.height || '400px' }}>
+        <Component key={data?.id} {...propsCpn} />
+      </div>
+    );
   return (
     <ComponentRenderer Component={Component} propsCpn={propsCpn} data={data}>
       {data?.childs?.map((child, index) => (
@@ -147,14 +171,26 @@ const RenderForm: FC<TProps> = (props) => {
     values: dataState,
   });
   const { handleSubmit } = methods;
-  const { handleAction } = useActions();
+  const { handleAction } = useActions(props);
+  const setFormData = actionHookSliceStore((state) => state.setFormData);
   const formKeys = useMemo(() => data?.componentProps?.formKeys, [data?.componentProps?.formKeys]);
 
   const onSubmit = (formData: any) => {
-    handleAction('onSubmit', data?.actions, formData);
+    const convertFormData = _.reduce(
+      formKeys,
+      (acc, { key, value }) => {
+        acc[key] = formData[value] || formData[key];
+        return acc;
+      },
+      {} as Record<string, any>
+    );
+
+    setFormData(convertFormData);
+    propsCpn?.onFinish();
   };
+
   if (!valueType) return <div></div>;
-  if (isLoading) return <LoadingPage />;
+  if (isLoading) return <></>;
 
   return (
     <FormProvider {...methods}>
@@ -182,8 +218,7 @@ const RenderForm: FC<TProps> = (props) => {
 const RenderFormItem: FC<TProps> = (props) => {
   const { data, formKeys, valueStream } = props;
   const { isLoading, valueType, Component, propsCpn, dataState } = useRenderItem(data, valueStream);
-  const { findVariable } = stateManagementStore();
-  // const { getData, dataState } = useHandleData({ dataProp: data?.data });
+  const { name, ...rest } = useMemo(() => propsCpn, [propsCpn]);
   const { control } = useFormContext();
   const { isInput } = getComponentType(data?.value || '');
 
@@ -197,21 +232,21 @@ const RenderFormItem: FC<TProps> = (props) => {
         <Controller
           control={control}
           name={inFormKeys.key}
-          render={({ field }) => <Component {...propsCpn} {...field} />}
+          render={({ field }) => <Component {...rest} {...field} />}
         />
       );
     }
-    return <Component {...propsCpn} />;
+    return <Component {...rest} />;
   }
-
+  if (!valueType) return <div></div>;
+  if (isLoading) return;
   return (
-    <ComponentRenderer Component={Component} propsCpn={propsCpn} data={data}>
+    <ComponentRenderer Component={Component} propsCpn={rest} data={data}>
       {data?.childs?.map((child) => (
         <RenderFormItem {...props} data={child} key={`form-child-${child.id}`} />
       ))}
-      <p className="grow"></p>
     </ComponentRenderer>
   );
 };
 
-export default memo(RenderSliceItem, isEqual);
+export default RenderSliceItem;

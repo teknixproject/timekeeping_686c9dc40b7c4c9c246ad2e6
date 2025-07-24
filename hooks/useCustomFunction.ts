@@ -4,7 +4,6 @@ import { customFunctionStore } from '@/stores/customFunction';
 import { TAction, TActionCustomFunction } from '@/types';
 import { transformVariable } from '@/uitls/tranformVariable';
 
-import { actionHookSliceStore } from './actionSliceStore';
 import { handleCustomFunction as handleFunction } from './handleCustomFunction';
 import { useHandleData } from './useHandleData';
 
@@ -12,11 +11,7 @@ export type TUseActions = {
   handleCustomFunction: (action: TAction<TActionCustomFunction>) => Promise<void>;
 };
 
-type TProps = {
-  executeActionFCType: (action?: TAction) => Promise<void>;
-};
-export const useCustomFunction = ({ executeActionFCType }: TProps): TUseActions => {
-  const findAction = actionHookSliceStore((state) => state.findAction);
+export const useCustomFunction = (): TUseActions => {
   const updateVariables = stateManagementStore((state) => state.updateVariables);
   const findVariable = stateManagementStore((state) => state.findVariable);
   const { getData } = useHandleData({});
@@ -36,8 +31,8 @@ export const useCustomFunction = ({ executeActionFCType }: TProps): TUseActions 
           isList: !!isList,
           type: outputType!,
           value: result,
-          key: '',
         });
+        console.log('🚀 ~ handleCustomFunction ~ resultStander:', resultStander);
 
         if (output?.variableId) {
           const variable = findVariable({ type: 'appState', id: output.variableId });
@@ -51,9 +46,6 @@ export const useCustomFunction = ({ executeActionFCType }: TProps): TUseActions 
             },
           });
         }
-      }
-      if (action.next) {
-        await executeActionFCType(findAction(action.next));
       }
     } catch (error) {
       throw error;

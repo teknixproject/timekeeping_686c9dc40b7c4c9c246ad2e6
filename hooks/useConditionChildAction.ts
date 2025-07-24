@@ -1,13 +1,14 @@
-import _ from 'lodash';
+import { TAction, TConditionalChild, TConditionChildMap } from '@/types';
 
-import { TAction, TConditional, TConditionalChild, TConditionChildMap } from '@/types';
-import { transformVariable } from '@/uitls/tranformVariable';
-
+import { actionHookSliceStore } from './store/actionSliceStore';
 import { useHandleData } from './useHandleData';
 
 export type TUseActions = {
-  executeConditional: (action: TAction<TConditional>) => Promise<void>;
-  handleCompareCondition: (conditionChildId: string, condition: TConditionChildMap) => boolean;
+  executeConditionalChild: (action: TAction<TConditionChildMap>) => Promise<boolean>;
+  handleCompareCondition: (
+    conditionChildId: string,
+    condition: TConditionChildMap
+  ) => Promise<boolean>;
 };
 
 // Enums for operators to avoid magic strings
@@ -123,17 +124,19 @@ export const getConditionChildById = (
  * @param getData - Function to retrieve data values
  * @returns Boolean result of the comparison
  */
-export const evaluateCompareCondition = (
+export const evaluateCompareCondition = async (
   compare: TConditionalChild['compare'],
   getData: (value: any) => any
-): boolean => {
+): Promise<boolean> => {
   if (!compare?.firstValue || !compare?.secondValue) {
     console.warn('Missing comparison values');
     return false;
   }
 
-  const firstValue = getData(compare.firstValue);
-  const secondValue = getData(compare.secondValue);
+  const firstValue = await getData(compare.firstValue);
+  console.log('🚀 evaluateCompareCondition~ firstValue:', firstValue);
+  const secondValue = await getData(compare.secondValue);
+  console.log('🚀evaluateCompareCondition ~ secondValue:', secondValue);
 
   // Check for null/undefined values
   if (firstValue == null || secondValue == null) {
@@ -160,11 +163,11 @@ export const evaluateCompareCondition = (
  * @param getData - Function to retrieve data values
  * @returns Boolean result of the condition evaluation
  */
-export const handleCompareCondition = (
+export const handleCompareCondition = async (
   conditionChildId: string,
   condition: TConditionChildMap,
   getData: (value: any) => any
-): boolean => {
+): Promise<boolean> => {
   const conditionChild = getConditionChildById(conditionChildId, condition);
 
   if (!conditionChild) {
@@ -174,19 +177,23 @@ export const handleCompareCondition = (
 
   // Handle simple comparison condition
   if (conditionChild.type === ConditionType.COMPARE) {
-    const valueCompareSignle = evaluateCompareCondition(conditionChild.compare, getData);
+    const valueCompareSignle = await evaluateCompareCondition(conditionChild.compare, getData);
+    console.log('🚀 ~ valueCompareSignle:', valueCompareSignle);
+
     return valueCompareSignle;
   }
 
   // Handle complex logic condition
   const firstValue = conditionChild.fistCondition
-    ? handleCompareCondition(conditionChild.fistCondition, condition, getData)
+    ? await handleCompareCondition(conditionChild.fistCondition, condition, getData)
     : undefined;
 
   const secondValue = conditionChild.secondCondition
-    ? handleCompareCondition(conditionChild.secondCondition, condition, getData)
+    ? await handleCompareCondition(conditionChild.secondCondition, condition, getData)
     : undefined;
 
+  console.log('🚀 ~ firstValue:', firstValue);
+  console.log('🚀 ~ secondValue:', secondValue);
   const valueComparasion = evaluateLogicOperation(
     firstValue,
     secondValue,
@@ -204,31 +211,23 @@ export const handleCompareCondition = (
  * @returns Boolean indicating if the condition was met
  */
 export const processCondition = async (
-  conditionId: string,
+  conditionChild: TAction<TConditionChildMap>,
   findAction: (id: string) => TAction | undefined,
-  getData: (value: any) => any,
-  executeActionFCType: (action?: TAction) => Promise<void>
+  getData: (value: any) => any
 ): Promise<boolean> => {
-  const conditionChild = findAction(conditionId) as TAction<TConditionChildMap>;
-
   if (!conditionChild?.data) {
-    console.warn(`Condition data not found: ${conditionId}`);
+    console.warn(`Condition data not found: ${conditionChild.id}`);
     return false;
   }
 
   const rootCondition = findRootConditionChild(conditionChild.data);
 
   if (!rootCondition?.id) {
-    console.warn(`Root condition not found: ${conditionId}`);
+    console.warn(`Root condition not found: ${conditionChild.id}`);
     return false;
   }
 
   const isConditionMet = handleCompareCondition(rootCondition.id, conditionChild.data, getData);
-
-  const isReturnValue = conditionChild.data.isReturnValue;
-  if (isConditionMet && conditionChild.next && !isReturnValue) {
-    await executeActionFCType(findAction(conditionChild.next));
-  }
 
   return isConditionMet;
 };
@@ -240,78 +239,29 @@ export const processCondition = async (
  * @param getData - Function to retrieve data values
  * @param executeActionFCType - Function to execute actions
  */
-export const executeConditional = async (
-  action: TAction<TConditional>,
-  findAction: (id: string) => TAction | undefined,
-  getData: (value: any) => any,
-  executeActionFCType?: (action?: TAction) => Promise<void>
-): Promise<void> => {
-  const conditions = action?.data?.conditions;
-  if (!executeActionFCType) return;
-  if (!conditions || _.isEmpty(conditions)) {
-    console.warn('No conditions found in action');
-    // Still execute next action if available
-    if (action?.next) {
-      await executeActionFCType(findAction(action.next));
-    }
-    return;
-  }
-
-  let valueReturn = null;
-  // Process each condition until the first one that is met
-  for (const conditionId of conditions) {
-    try {
-      const isConditionMet = await processCondition(
-        conditionId,
-        findAction,
-        getData,
-        executeActionFCType
-      );
-
-      if (isConditionMet) {
-        const condition = findAction(conditionId) as TAction<TConditionChildMap>;
-        const isReturnValue = condition?.data?.isReturnValue;
-        const value = _.get(condition, 'data.valueReturn');
-        if (value && isReturnValue) {
-          valueReturn = transformVariable(value);
-        }
-        break; // Exit after first matching condition
-      }
-    } catch (error) {
-      console.error(`Error processing condition ${conditionId}:`, error);
-      // Continue with next condition
-    }
-  }
-
-  if (valueReturn) return valueReturn;
-};
-
 /**
  * Custom hook for handling condition-based actions
  * @param props - Hook properties containing action execution function
  * @returns Object with condition execution functions
  */
-export const useConditionAction = (): TUseActions => {
+export const useConditionChildAction = (): TUseActions => {
   // Store hooks
+  const { findAction } = actionHookSliceStore();
   const { getData } = useHandleData({});
 
-  /**
-   * Wrapper for handleCompareCondition with injected dependencies
-   */
-  const handleCompareConditionWrapper = (
+  const handleCompareConditionWrapper = async (
     conditionChildId: string,
     condition: TConditionChildMap
-  ): boolean => {
-    return handleCompareCondition(conditionChildId, condition, getData);
+  ): Promise<boolean> => {
+    return await handleCompareCondition(conditionChildId, condition, getData);
   };
 
-  /**
-   * Wrapper for executeConditional with injected dependencies
-   */
-  const executeConditionalWrapper = async (action: TAction<TConditional>): Promise<void> => {};
+  const executeConditionalChild = async (action: TAction<TConditionChildMap>): Promise<boolean> => {
+    return await processCondition(action, findAction, getData);
+  };
 
   return {
-    executeConditional: executeConditionalWrapper,
+    executeConditionalChild,
     handleCompareCondition: handleCompareConditionWrapper,
   };
 };

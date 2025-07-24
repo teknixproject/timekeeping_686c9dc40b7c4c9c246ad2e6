@@ -28,9 +28,10 @@ export function getMatchingRoutePattern(pathname: string, patterns: string[]): s
 export function buildPathFromPattern(
   pattern: string,
   params: { key: string; value: string | number }[],
-  getData: any
+  getData: any,
+  valueStream: any
 ) {
   return params.reduce((acc, { key, value }) => {
-    return acc.replace(`[${key}]`, encodeURIComponent(getData(value)));
+    return acc.replace(`[${key}]`, encodeURIComponent(getData(value, valueStream)));
   }, pattern);
 }

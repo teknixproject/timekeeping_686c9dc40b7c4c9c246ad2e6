@@ -10,11 +10,13 @@ interface layoutDataType {
 }
 interface LayoutContextType {
   headerLayout: layoutDataType;
-  headerPosition: string;
+  sidebarLayout: layoutDataType;
+  sidebarPosition: string;
   footerLayout: layoutDataType;
   setHeaderLayout: (layout: layoutDataType) => void;
+  setSidebarLayout: (layout: layoutDataType) => void;
   setFooterLayout: (layout: layoutDataType) => void;
-  setHeaderPosition: (value: string) => void;
+  setSidebarPosition: (value: string) => void;
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
@@ -24,21 +26,27 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
     layoutJson: null,
     _id: '',
   });
+  const [sidebarLayout, setSidebarLayout] = useState<layoutDataType>({
+    layoutJson: null,
+    _id: '',
+  });
   const [footerLayout, setFooterLayout] = useState<layoutDataType>({
     layoutJson: null,
     _id: '',
   });
-  const [headerPosition, setHeaderPosition] = useState<string>('top');
+  const [sidebarPosition, setSidebarPosition] = useState<string>('top');
 
   return (
     <LayoutContext.Provider
       value={{
         headerLayout,
+        sidebarLayout,
         footerLayout,
-        headerPosition,
+        sidebarPosition,
         setHeaderLayout,
+        setSidebarLayout,
         setFooterLayout,
-        setHeaderPosition,
+        setSidebarPosition,
       }}
     >
       {children}

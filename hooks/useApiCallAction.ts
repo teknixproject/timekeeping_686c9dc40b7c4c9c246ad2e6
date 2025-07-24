@@ -6,16 +6,11 @@ import { useCallback } from 'react';
 import { stateManagementStore } from '@/stores';
 import { authSettingStore } from '@/stores/authSetting';
 import {
-  TAction,
-  TActionApiCall,
-  TActionCustomFunction,
-  TActionVariable,
-  TApiCallValue,
-  TApiCallVariable,
+    TAction, TActionApiCall, TActionCustomFunction, TActionVariable, TApiCallValue, TApiCallVariable
 } from '@/types';
 import { variableUtil } from '@/uitls';
 
-import { actionHookSliceStore } from './actionSliceStore';
+import { actionHookSliceStore } from './store/actionSliceStore';
 import { useApiCall } from './useApiCall';
 import { useCustomFunction } from './useCustomFunction';
 import { useHandleData } from './useHandleData';
@@ -25,11 +20,17 @@ const { isUseVariable, extractAllValuesFromTemplate } = variableUtil;
 export type TUseActions = {
   handleApiCallAction: (action: TAction<TActionApiCall>) => Promise<void>;
 };
+const convertUrl = (apiCallMember: TApiCallValue, fallbackUrl?: string): string => {
+  const baseUrl = apiCallMember?.url || fallbackUrl || '';
 
-type TProps = {
-  executeActionFCType: (action?: TAction) => Promise<void>;
+  if (!apiCallMember?.variables?.length) return baseUrl;
+
+  return apiCallMember.variables.reduce(
+    (url, { key, value }) => url.replace(`[${key}]`, String(value)),
+    baseUrl
+  );
 };
-export const useApiCallAction = ({ executeActionFCType }: TProps): TUseActions => {
+export const useApiCallAction = (): TUseActions => {
   const router = useRouter();
   const { getApiMember } = useApiCall();
   const { getData } = useHandleData({});
@@ -38,8 +39,7 @@ export const useApiCallAction = ({ executeActionFCType }: TProps): TUseActions =
   const forbiddenCode = authSettingStore((state) => state.forbiddenCode);
   const findVariable = stateManagementStore((state) => state.findVariable);
   const updateVariables = stateManagementStore((state) => state.updateVariables);
-  const { handleCustomFunction } = useCustomFunction({ executeActionFCType });
-  const { findAction } = actionHookSliceStore();
+  const { handleCustomFunction } = useCustomFunction();
   const { getState } = actionHookSliceStore;
   const convertActionVariables = useCallback(
     (actionVariables: TActionVariable[], apiCall: TApiCallValue): any[] => {
@@ -77,27 +77,6 @@ export const useApiCallAction = ({ executeActionFCType }: TProps): TUseActions =
     }, {} as Record<string, any>);
   }, []);
 
-  // const handleApiResponse = useCallback(
-  //   (result: any, outputConfig: { variableId?: string; jsonPath?: string }) => {
-  //     if (!outputConfig?.variableId) return;
-
-  //     const value = outputConfig.jsonPath ? _.get(result, outputConfig.jsonPath, result) : result;
-
-  //     const variable = findVariable({
-  //       type: 'apiResponse',
-  //       id: outputConfig.variableId,
-  //     });
-  //     if (!variable) return;
-  //     updateVariables({
-  //       type: 'apiResponse',
-  //       dataUpdate: {
-  //         ...variable,
-  //         value,
-  //       },
-  //     });
-  //   },
-  //   [updateVariables]
-  // );
   const convertQuery = (apiCallMember: TApiCallValue) => {
     const queryConvert = apiCallMember?.query
       ?.map((item) => {
@@ -145,10 +124,10 @@ export const useApiCallAction = ({ executeActionFCType }: TProps): TUseActions =
       const response = await axios.request({
         baseURL: apiCall?.baseUrl || '',
         method: apiCall?.method?.toUpperCase(),
-        url: apiCall.url,
+        url: convertUrl(apiCall),
         headers: convertHeader(apiCall),
-        data: body,
-        params: convertQuery(apiCall),
+        data: ['POST', 'PUT', 'PATCH'].includes(apiCall?.method?.toUpperCase() || '') && body,
+        params: ['GET'].includes(apiCall?.method?.toUpperCase() || '') && convertQuery(apiCall),
       });
 
       if (outputVariable) {
@@ -204,23 +183,20 @@ export const useApiCallAction = ({ executeActionFCType }: TProps): TUseActions =
       if (entryPage) router.push(entryPage);
     }
   };
+  const handleBody = (apiCall: TApiCallValue, variables: Record<string, any>) => {
+    const formData = getState().formData;
+    return formData || convertApiCallBody(apiCall?.body, variables);
+  };
   const handleApiCallAction = async (action: TAction<TActionApiCall>): Promise<void> => {
     const apiCall = getApiMember(action?.data?.apiId ?? '');
 
     if (!apiCall) return;
-    const triggerName = getState().triggerName;
-    const formData = getState().formData;
     const variables = convertActionVariables(action?.data?.variables ?? [], apiCall);
-    const newBody =
-      triggerName === 'onSubmit' ? formData : convertApiCallBody(apiCall?.body, variables);
+    const newBody = handleBody(apiCall, variables);
 
-    const result = await makeApiCall(apiCall, newBody, action?.data?.output?.variableId ?? '');
+    await makeApiCall(apiCall, newBody, action?.data?.output?.variableId ?? '');
 
     // handleApiResponse(result, action?.data?.output ?? {});
-
-    if (result && action?.next) {
-      await executeActionFCType(findAction(action.next));
-    }
   };
 
   return { handleApiCallAction };
