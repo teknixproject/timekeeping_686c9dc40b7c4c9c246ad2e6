@@ -3,7 +3,6 @@ import _ from 'lodash';
 import { TAction, TConditional, TConditionalChild, TConditionChildMap } from '@/types';
 import { transformVariable } from '@/uitls/tranformVariable';
 
-import { actionHookSliceStore } from './actionSliceStore';
 import { useHandleData } from './useHandleData';
 
 export type TUseActions = {
@@ -294,7 +293,6 @@ export const executeConditional = async (
  */
 export const useConditionAction = (): TUseActions => {
   // Store hooks
-  const { findAction } = actionHookSliceStore();
   const { getData } = useHandleData({});
 
   /**

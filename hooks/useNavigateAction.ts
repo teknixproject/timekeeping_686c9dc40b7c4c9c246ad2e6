@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { TAction, TActionNavigate } from '@/types';
 import { buildPathFromPattern } from '@/uitls/pathname';
 
+import { TActionsProps } from './useActions';
 import { useHandleData } from './useHandleData';
 
 export type TUseActions = {
@@ -37,10 +38,10 @@ export const normalizeUrl = (url: string): string => {
     return cleanUrl;
   }
 };
-
-export const useNavigateAction = (): TUseActions => {
+type TProps = TActionsProps;
+export const useNavigateAction = ({ data, valueStream }: TProps): TUseActions => {
   const router = useRouter();
-  const { getData } = useHandleData({});
+  const { getData } = useHandleData({ activeData: data, valueStream: valueStream });
 
   const isValidUrl = (url: string): boolean => {
     try {
@@ -60,7 +61,8 @@ export const useNavigateAction = (): TUseActions => {
       const { url, isExternal, isNewTab, parameters = [] } = action?.data || {};
       if (!url) return;
 
-      const urlConverted = buildPathFromPattern(url, parameters, getData);
+      const urlConverted = buildPathFromPattern(url, parameters, getData, valueStream);
+      console.log('🚀 ~ handleNavigateAction ~ valueStream:', valueStream);
       console.log('🚀 ~ handleNavigateAction ~ urlConverted:', urlConverted);
 
       if (!isValidUrl(urlConverted)) {

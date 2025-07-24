@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { stateManagementStore } from '@/stores';
 import { TAction, TActionUpdateState, TTypeSelectState } from '@/types';
 
-import { actionHookSliceStore } from './actionSliceStore';
+import { actionHookSliceStore } from './store/actionSliceStore';
 import { useHandleData } from './useHandleData';
 
 export type TUseActions = {
