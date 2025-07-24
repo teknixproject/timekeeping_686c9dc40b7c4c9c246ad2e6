@@ -62,7 +62,6 @@ const useRenderItem = (data: GridItem, valueStream?: any) => {
     valueType,
     activeData: data,
   });
-  console.log(`🚀 ~ useRenderItem ~ dataState:${data.id}`, dataState);
 
   const { actions } = useHandleProps({ dataProps: getPropActions(data), data, valueStream });
 
@@ -137,7 +136,7 @@ const RenderSliceItem: FC<TProps> = (props) => {
   const { data, valueStream } = useMemo(() => props, [props]);
 
   const { isLoading, valueType, Component, propsCpn, dataState } = useRenderItem(data, valueStream);
-  console.log(`🚀 ~ propsCpn: ${data.id}`, propsCpn);
+  // console.log(`🚀 ~ propsCpn: ${data.id}`, propsCpn);
 
   const { isForm, isNoChildren, isChart, isMap } = getComponentType(data?.value || '');
   if (!valueType) return <div></div>;
@@ -177,9 +176,6 @@ const RenderForm: FC<TProps> = (props) => {
   const formKeys = useMemo(() => data?.componentProps?.formKeys, [data?.componentProps?.formKeys]);
 
   const onSubmit = (formData: any) => {
-    console.log('🚀 ~ onSubmit ~ formData:', formData);
-
-    console.log('🚀 ~ onSubmit ~ formKeys:', formKeys);
     const convertFormData = _.reduce(
       formKeys,
       (acc, { key, value }) => {
@@ -188,7 +184,6 @@ const RenderForm: FC<TProps> = (props) => {
       },
       {} as Record<string, any>
     );
-    console.log('🚀 ~ onSubmit ~ convertFormData:', convertFormData);
 
     setFormData(convertFormData);
     propsCpn?.onFinish();
